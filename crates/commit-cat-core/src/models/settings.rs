@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use super::cat_profile::{default_cat_profile, normalize_cat_profiles, CatProfile};
+
 /// 앱 설정 (권한 토글 포함)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -152,6 +154,10 @@ pub struct AppData {
     pub version: u32,
     pub settings: AppSettings,
     pub cat: CatPersistence,
+    #[serde(default = "default_cat_profiles")]
+    pub cat_profiles: Vec<CatProfile>,
+    #[serde(default = "default_active_cat_profile_id")]
+    pub active_cat_profile_id: String,
     pub today: super::activity::DailySummary,
     pub history: Vec<super::activity::DailySummary>,
     #[serde(default)]
@@ -211,10 +217,45 @@ impl Default for AppData {
             version: 1,
             settings: AppSettings::default(),
             cat: CatPersistence::default(),
+            cat_profiles: default_cat_profiles(),
+            active_cat_profile_id: default_active_cat_profile_id(),
             today: super::activity::DailySummary::default(),
             history: vec![],
             github_state: GitHubState::default(),
             last_update_check: None,
+        }
+    }
+}
+
+fn default_cat_profiles() -> Vec<CatProfile> {
+    vec![default_cat_profile()]
+}
+
+fn default_active_cat_profile_id() -> String {
+    default_cat_profile().id
+}
+
+impl AppData {
+    pub fn normalize(&mut self) {
+        normalize_cat_profiles(&mut self.cat_profiles, &mut self.active_cat_profile_id);
+    }
+
+    pub fn active_cat_profile(&self) -> &CatProfile {
+        self.cat_profiles
+            .iter()
+            .find(|profile| profile.id == self.active_cat_profile_id)
+            .unwrap_or(&self.cat_profiles[0])
+    }
+
+    pub fn active_cat_profile_mut(&mut self) -> &mut CatProfile {
+        if let Some(index) = self
+            .cat_profiles
+            .iter()
+            .position(|profile| profile.id == self.active_cat_profile_id)
+        {
+            &mut self.cat_profiles[index]
+        } else {
+            &mut self.cat_profiles[0]
         }
     }
 }

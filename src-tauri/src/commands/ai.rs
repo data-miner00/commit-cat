@@ -6,6 +6,7 @@ use commit_cat_core::models::ai_provider_catalog::{
     normalize_provider_owned, resolve_model_with_catalog, resolve_reasoning_with_catalog,
     AiProviderCatalogResponse,
 };
+use commit_cat_core::models::cat_profile::CatPersonalityPreset;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -92,8 +93,21 @@ pub async fn chat_with_cat(app: AppHandle, message: String) -> Result<String, St
     // Build system prompt (shared)
     let today = &data.today;
     let cat = &data.cat;
+    let active_profile = data.active_cat_profile();
     let coding_hours = today.coding_minutes / 60;
     let coding_mins = today.coding_minutes % 60;
+    let persona_clause = match active_profile.personality {
+        CatPersonalityPreset::Classic => {
+            "Personality: balanced, warm, playful, and gently encouraging."
+        }
+        CatPersonalityPreset::Chill => "Personality: calm, cozy, reassuring, and low-pressure.",
+        CatPersonalityPreset::Tsundere => {
+            "Personality: a little sharp and teasing, but secretly supportive and affectionate."
+        }
+        CatPersonalityPreset::Chaotic => {
+            "Personality: hyper, playful, dramatic, and full of restless coding energy."
+        }
+    };
 
     let system_prompt = format!(
         "You are CommitCat, a small desktop cat companion that lives on a developer's screen. \
@@ -101,8 +115,9 @@ pub async fn chat_with_cat(app: AppHandle, message: String) -> Result<String, St
          no action descriptions like *purrs* or *meows*. \
          Reply in 3-5 sentences max. Always add 1 relevant emoji at the end. \
          Keep total response under 200 characters. \
+         Active cat profile: {}. {} \
          User stats: {} commits, {}h{}m coding, Lv.{}.",
-        today.commits, coding_hours, coding_mins, cat.level,
+        active_profile.name, persona_clause, today.commits, coding_hours, coding_mins, cat.level,
     );
 
     match provider.as_str() {

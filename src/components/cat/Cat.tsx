@@ -7,6 +7,13 @@ import { listen, emit } from "@tauri-apps/api/event";
 import { sendNotification, isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notification";
 import { useCatStore } from "../../stores/catStore";
 import { useShallow } from "zustand/react/shallow";
+import {
+  getCodingBubbleDelayRange,
+  getEmotionMessages,
+  getPersonalityMessages,
+  planNextBehavior,
+  type CatBehavior,
+} from "./personality";
 import "./Cat.css";
 
 async function notify(title: string, body: string) {
@@ -27,26 +34,9 @@ const WIN_W_EXPANDED = 350;
 const DRAG_W = 160;
 const DRAG_H = 160;
 
-const normalMessages = ["hey there~ 😺", "what's up? 🐾", "hi hi~ 💛", "oh, hello! 😸", "noticed me? 👀"];
-const happyMessages = ["that feels nice~ 💛", "more more! 😻", "you're the best 🥰", "hehe~ 😸"];
-const loveMessages = ["I love you so much~ 💕", "you're my favorite human 💗", "never stop... 🥺💛", "purrrrrr~ 💞"];
-const annoyedMessages = ["okay I get it 😑", "a bit much... 🙄", "I was napping! 😾", "not now please 😤"];
-const codingMessages = [
-  "you're on a roll today 🔥", "ooh that's clean code 👀",
-  "don't forget to save 💾", "hydration check! 💧",
-  "nice focus session 💪", "you've been at it, take a breather? ☕",
-  "this is coming together nicely ✨", "smooth typing today 🎹",
-  "I believe in you 💛", "commit when you're ready 📦",
-];
-
-// 감정별 메시지
-const surprisedMessages = ["whoa! what happened?! 😱", "oh no! 💥", "huh?! 😳", "that was unexpected! 😮"];
-const excitedMessages = ["you're on fire!! 🔥🔥", "commit streak! 🚀", "unstoppable! ⚡", "keep going!! 💪✨"];
-const proudMessages = ["we did it! 🏆", "so proud of us! 🌟", "amazing work! 👑", "look at that! ✨"];
-const boredMessages = ["so bored... 😴", "anyone there? 🥱", "I miss coding... 💤", "come back soon~ 🐾"];
-const angryMessages = ["not again!! 😡", "fix the bugs! 🔥", "grr... 💢", "this is frustrating! 😤"];
-
-type Behavior = "walk" | "stand" | "sit" | "sleep";
+function pickRandom<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
 
 interface XpResult {
   level: number;
@@ -176,11 +166,11 @@ function TimerDisplay({ showBubble }: { showBubble: (msg: string, duration?: num
 // ══════════════════════════════════════
 export function Cat() {
   const {
-    catColor, setCatColor, state: catState, levelUp, clearLevelUp,
+    catColor, catPersonality, state: catState, levelUp, clearLevelUp,
     pomodoroActive, startPomodoro, stopPomodoro,
     setState: setCatState, emotion,
   } = useCatStore(useShallow(s => ({
-    catColor: s.catColor, setCatColor: s.setCatColor,
+    catColor: s.catColor, catPersonality: s.catPersonality,
     state: s.state, levelUp: s.levelUp, clearLevelUp: s.clearLevelUp,
     pomodoroActive: s.pomodoroActive,
     startPomodoro: s.startPomodoro, stopPomodoro: s.stopPomodoro,
@@ -251,14 +241,6 @@ export function Cat() {
     document.addEventListener("mousemove", onMove);
     return () => document.removeEventListener("mousemove", onMove);
   }, []);
-
-  // 트레이 메뉴에서 고양이 색상 변경 이벤트 수신
-  useEffect(() => {
-    const unlisten = listen<string>("change-cat-color", (event) => {
-      setCatColor(event.payload as "white" | "brown" | "orange");
-    });
-    return () => { unlisten.then(fn => fn()); };
-  }, [setCatColor]);
 
   const winPosRef = useRef({ x: 300, y: 200 });
   const [direction, setDirection] = useState<"left" | "right">("right");
@@ -521,7 +503,7 @@ export function Cat() {
   }, []);
 
   // ── 행동 ──
-  const [behavior, setBehavior] = useState<Behavior>("walk");
+  const [behavior, setBehavior] = useState<CatBehavior>("walk");
 
   // ── sleep 전용 상태 ──
   const sleepStartTime = useRef(0);
@@ -547,38 +529,8 @@ export function Cat() {
   // 행동 전환: walk <-> stand <-> sit <-> sleep
   useEffect(() => {
     if (catState !== "idle" && catState !== "interaction" && catState !== "coding") return;
-
-    let duration: number;
-    let next: Behavior;
-
-    if (behavior === "walk") {
-      duration = 5000 + Math.random() * 5000;
-      next = "stand";
-    } else if (behavior === "stand") {
-      if (Math.random() < 0.5) {
-        duration = 2000 + Math.random() * 3000;
-        next = "walk";
-      } else {
-        duration = 2000 + Math.random() * 2000;
-        next = "sit";
-      }
-    } else if (behavior === "sit") {
-      // sleep에서 깨워진 sit인 경우 다시 sleep으로
-      if (sleepStartTime.current > 0 && Date.now() - sleepStartTime.current < 30000) {
-        duration = 1500 + Math.random() * 1000;
-        next = "sleep";
-      } else if (Math.random() < 0.5) {
-        duration = 2000 + Math.random() * 2000;
-        next = "sleep";
-      } else {
-        duration = 5000 + Math.random() * 3000;
-        next = "stand";
-      }
-    } else {
-      // sleep -> 10~15초 후 stand
-      duration = 10000 + Math.random() * 5000;
-      next = "stand";
-    }
+    const recentlyWoke = sleepStartTime.current > 0 && Date.now() - sleepStartTime.current < 30000;
+    const { next, duration } = planNextBehavior(behavior, catPersonality, recentlyWoke);
 
     const id = setTimeout(() => {
       if (next !== "sleep" && next !== "sit") {
@@ -595,7 +547,7 @@ export function Cat() {
       }
     }, duration);
     return () => clearTimeout(id);
-  }, [behavior, catState]);
+  }, [behavior, catPersonality, catState]);
 
   // ══════════════════════════════════════
   // 걷기 프레임: walk일 때만 stand/walk 교차
@@ -723,18 +675,9 @@ export function Cat() {
   // ── 감정 변경 시 말풍선 표시 ──
   useEffect(() => {
     if (!emotion) return;
-    const msgMap: Record<string, string[]> = {
-      surprised: surprisedMessages,
-      excited: excitedMessages,
-      proud: proudMessages,
-      bored: boredMessages,
-      angry: angryMessages,
-    };
-    const msgs = msgMap[emotion];
-    if (msgs) {
-      showBubble(msgs[Math.floor(Math.random() * msgs.length)], emotion === "bored" ? 4000 : 3000);
-    }
-  }, [emotion, showBubble]);
+    const msgs = getEmotionMessages(catPersonality, emotion);
+    showBubble(pickRandom(msgs), emotion === "bored" ? 4000 : 3000);
+  }, [catPersonality, emotion, showBubble]);
 
   // ── GitHub 이벤트 ──
   useEffect(() => {
@@ -784,9 +727,10 @@ export function Cat() {
     }
 
     const scheduleBubble = () => {
-      const delay = (3 + Math.random() * 7) * 60_000; // 3~10분
+      const [minMinutes, maxMinutes] = getCodingBubbleDelayRange(catPersonality);
+      const delay = (minMinutes + Math.random() * (maxMinutes - minMinutes)) * 60_000;
       codingBubbleTimer.current = setTimeout(() => {
-        const msg = codingMessages[Math.floor(Math.random() * codingMessages.length)];
+        const msg = pickRandom(getPersonalityMessages(catPersonality, "coding"));
         showBubble(msg, 3000);
         scheduleBubble();
       }, delay);
@@ -799,7 +743,7 @@ export function Cat() {
         codingBubbleTimer.current = null;
       }
     };
-  }, [catState, showBubble]);
+  }, [catPersonality, catState, showBubble]);
 
   // ══════════════════════════════════════
   // 드래그
@@ -907,14 +851,14 @@ export function Cat() {
         const score = petScore.current;
         if (score >= 10 && petTier.current < 3) {
           petTier.current = 3;
-          showBubble(loveMessages[Math.floor(Math.random() * loveMessages.length)], 3000);
+          showBubble(pickRandom(getPersonalityMessages(catPersonality, "love")), 3000);
         } else if (score >= 6 && petTier.current < 2) {
           petTier.current = 2;
           setShowPettingImg(true);
-          showBubble(happyMessages[Math.floor(Math.random() * happyMessages.length)], 2500);
+          showBubble(pickRandom(getPersonalityMessages(catPersonality, "happy")), 2500);
         } else if (score >= 3 && petTier.current < 1) {
           petTier.current = 1;
-          showBubble(normalMessages[Math.floor(Math.random() * normalMessages.length)], 2000);
+          showBubble(pickRandom(getPersonalityMessages(catPersonality, "normal")), 2000);
         }
       }
       petLastDirection.current = dir;
@@ -936,13 +880,11 @@ export function Cat() {
       window.removeEventListener("mousemove", handlePetMove);
       window.removeEventListener("mouseup", handlePetUp);
     };
-  }, [showBubble, handleContextMenu]);
+  }, [catPersonality, showBubble, handleContextMenu]);
 
   // ══════════════════════════════════════
   // 클릭
   // ══════════════════════════════════════
-  const sleepAnnoyedMessages = ["five more minutes... 😴", "shh I'm dreaming 💤", "come back later... 🌙", "not now... 😾"];
-
   const handleClick = () => {
     if (didDrag.current) return;
     // 더블클릭과 구분하기 위해 약간 지연
@@ -954,8 +896,7 @@ export function Cat() {
       if (behavior === "sleep") {
         sleepClickCount.current += 1;
         if (sleepClickCount.current >= 5) {
-          const msg = sleepAnnoyedMessages[Math.floor(Math.random() * sleepAnnoyedMessages.length)];
-          showBubble(msg);
+          showBubble(pickRandom(getPersonalityMessages(catPersonality, "sleepAnnoyed")));
         } else {
           showBubble("hmm...? 😪", 1500);
         }
@@ -969,8 +910,8 @@ export function Cat() {
       const count = clickCount.current;
       if (clickResetTimer.current) clearTimeout(clickResetTimer.current);
       clickResetTimer.current = setTimeout(() => { clickCount.current = 0; }, 3000);
-      const msgs = count <= 2 ? normalMessages : count <= 5 ? happyMessages : annoyedMessages;
-      showBubble(msgs[Math.floor(Math.random() * msgs.length)]);
+      const group = count <= 2 ? "normal" : count <= 5 ? "happy" : "annoyed";
+      showBubble(pickRandom(getPersonalityMessages(catPersonality, group)));
     }, 250);
   };
 

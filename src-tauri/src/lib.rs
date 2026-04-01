@@ -208,6 +208,11 @@ pub fn run() {
             commands::cat::click_cat,
             commands::cat::quit_app,
             commands::cat::setup_sub_cat_window,
+            commands::cat::get_cat_profiles,
+            commands::cat::create_cat_profile,
+            commands::cat::update_cat_profile,
+            commands::cat::delete_cat_profile,
+            commands::cat::set_active_cat_profile,
             // Activity
             commands::activity::get_today_summary,
             commands::activity::get_today_events,

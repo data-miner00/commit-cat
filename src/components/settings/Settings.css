@@ -300,6 +300,189 @@
 
 /* ── Cat Color Picker ── */
 
+.settings__profile-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.settings__profile-add {
+  border: 1px solid #ddd;
+  background: #f7f7f7;
+  color: #444;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.settings__profile-add:hover {
+  background: #efefef;
+  border-color: #ccc;
+}
+
+.settings__profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.settings__profile-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.settings__profile-card:hover {
+  border-color: #d6d6d6;
+  background: #f5f5f5;
+}
+
+.settings__profile-card--selected {
+  border-color: #333;
+  background: #f1f1f1;
+}
+
+.settings__profile-card-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.settings__profile-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.settings__profile-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #777;
+}
+
+.settings__profile-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #333;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.settings__profile-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.settings__profile-color--brown {
+  background: #8b6914;
+}
+
+.settings__profile-color--orange {
+  background: #e8881c;
+}
+
+.settings__profile-color--white {
+  background: #f0f0f0;
+}
+
+.settings__profile-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.settings__profile-action {
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #444;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.settings__profile-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.settings__profile-action--danger {
+  color: #b33;
+}
+
+.settings__profile-error {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b33;
+  font-size: 12px;
+}
+
+.settings__profile-editor {
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #f7f7f7;
+  border: 1px solid #ebebeb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings__profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings__profile-input,
+.settings__profile-select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  padding: 8px 10px;
+  outline: none;
+}
+
+.settings__profile-input:focus,
+.settings__profile-select:focus {
+  border-color: #999;
+}
+
+.settings__profile-help {
+  font-size: 11px;
+  color: #777;
+}
+
 .settings__color-row {
   display: flex;
   align-items: center;

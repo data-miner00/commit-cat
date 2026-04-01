@@ -1,11 +1,11 @@
-pub mod cat;
 pub mod activity;
+pub mod ai;
+pub mod cat;
+pub mod fullscreen;
+pub mod git;
+pub mod github;
 pub mod growth;
 pub mod pomodoro;
-pub mod git;
 pub mod settings;
-pub mod fullscreen;
-pub mod xp;
-pub mod ai;
-pub mod github;
 pub mod update;
+pub mod xp;

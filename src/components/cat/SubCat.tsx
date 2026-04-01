@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { LogicalPosition } from "@tauri-apps/api/dpi";
-import type { CatColor, CatEmotion } from "../../stores/catStore";
+import type { CatEmotion } from "../../stores/catStore";
+import type { CatColor } from "../../types/cat";
 import "./Cat.css";
 
 const WIN_W = 200;

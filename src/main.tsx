@@ -5,7 +5,7 @@ import App from "./App";
 import { Settings } from "./components/settings/Settings";
 import { Summary } from "./components/summary/Summary";
 import { SubCat } from "./components/cat/SubCat";
-import type { CatColor } from "./stores/catStore";
+import type { CatColor } from "./types/cat";
 import "./styles/global.css";
 
 const windowLabel = getCurrentWindow().label;

@@ -1,7 +1,7 @@
-use commit_cat_core::models::activity::ActivityEvent;
-use commit_cat_core::models::growth::exp_for_level;
 use crate::services::storage;
 use chrono::Local;
+use commit_cat_core::models::activity::ActivityEvent;
+use commit_cat_core::models::growth::exp_for_level;
 use std::collections::HashSet;
 use std::process::{Command, Stdio};
 use std::time::Duration;
@@ -90,14 +90,14 @@ fn get_running_container_ids() -> Option<HashSet<String>> {
 
 /// `docker build` 프로세스 실행 중인지 확인
 fn is_docker_build_running() -> bool {
-    let output = silent_command("ps")
-        .args(["-A", "-o", "args="])
-        .output();
+    let output = silent_command("ps").args(["-A", "-o", "args="]).output();
 
     match output {
         Ok(o) => {
             let stdout = String::from_utf8_lossy(&o.stdout);
-            stdout.lines().any(|l| l.contains("docker build") || l.contains("docker buildx build"))
+            stdout
+                .lines()
+                .any(|l| l.contains("docker build") || l.contains("docker buildx build"))
         }
         Err(_) => false,
     }

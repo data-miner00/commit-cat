@@ -5,6 +5,7 @@ import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { sendNotification, isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notification";
 import { Cat } from "./components/cat/Cat";
 import { useCatStore } from "./stores/catStore";
+import type { CatProfile, CatProfilesResponse } from "./types/cat";
 
 // 백엔드에서 오는 상태 데이터
 interface ActivityStatus {
@@ -44,7 +45,7 @@ function App() {
   const {
     setState, setActiveIde, setIdleSeconds, addCodingMinute, setLevel, triggerLevelUp,
     setEmotion, clearEmotion, incrementCommitStreak, resetCommitStreak,
-    incrementBuildFails, resetBuildFails, syncSubCats,
+    incrementBuildFails, resetBuildFails, syncSubCats, applyActiveProfile,
   } = useCatStore();
 
   // celebrating/interaction 같은 임시 상태의 자동 복귀 타이머
@@ -105,11 +106,18 @@ function App() {
   useEffect(() => {
     (async () => {
       try {
-        const [status, settings] = await Promise.all([
+        const [status, settings, profileResponse] = await Promise.all([
           invoke<XpStatus>("get_xp_status"),
           invoke<{ maxCompanions?: number }>("get_settings"),
+          invoke<CatProfilesResponse>("get_cat_profiles"),
         ]);
         setLevel(status.level, status.currentExp, status.expToNext);
+        const activeProfile = profileResponse.profiles.find(
+          profile => profile.id === profileResponse.activeProfileId,
+        );
+        if (activeProfile) {
+          applyActiveProfile(activeProfile);
+        }
         // 초기 로드 후 서브 고양이 동기화 (maxCompanions > 0일 때만)
         const companions = settings.maxCompanions ?? 2;
         if (companions > 0) {
@@ -119,7 +127,7 @@ function App() {
         console.error("Failed to load XP status:", e);
       }
     })();
-  }, [setLevel]);
+  }, [applyActiveProfile, setLevel]);
 
   useEffect(() => {
     const unlisten = Promise.all([
@@ -367,10 +375,16 @@ function App() {
     return () => { unlisten.then((fn) => fn()); };
   }, [syncSubCats]);
 
-  // 메인 고양이 색상 변경 시 서브 고양이 재배정
+  // 활성 프로필 변경/편집 시 메인 고양이 갱신
   useEffect(() => {
-    const unlisten = listen<string>("change-cat-color", async () => {
-      // 설정에서 maxCompanions를 읽어서 반영
+    const unlisten = listen<CatProfile>("cat-profile:changed", async (event) => {
+      const previousColor = useCatStore.getState().catColor;
+      applyActiveProfile(event.payload);
+
+      if (previousColor === event.payload.color) {
+        return;
+      }
+
       try {
         const settings = await invoke<{ maxCompanions?: number }>("get_settings");
         const companions = settings.maxCompanions ?? 2;
@@ -380,7 +394,7 @@ function App() {
       }
     });
     return () => { unlisten.then((fn) => fn()); };
-  }, []);
+  }, [applyActiveProfile]);
 
   // 동료 고양이 수 변경 (설정에서 0/1/2)
   useEffect(() => {
