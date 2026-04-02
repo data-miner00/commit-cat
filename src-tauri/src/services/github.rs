@@ -1,7 +1,7 @@
-use crate::services::storage;
-use chrono::Local;
 use commit_cat_core::models::activity::ActivityEvent;
 use commit_cat_core::models::growth::exp_for_level;
+use crate::services::storage;
+use chrono::Local;
 use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
 use serde::Deserialize;
 use std::path::Path;
@@ -277,7 +277,11 @@ async fn check_stars(app: &AppHandle, client: &reqwest::Client, token: &str, own
         Err(_) => return,
     };
 
-    let last = data.github_state.last_star_counts.get(owner_repo).copied();
+    let last = data
+        .github_state
+        .last_star_counts
+        .get(owner_repo)
+        .copied();
 
     if let Some(prev) = last {
         if star_count > prev {

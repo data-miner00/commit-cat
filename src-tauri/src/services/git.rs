@@ -1,8 +1,8 @@
+use tauri::{AppHandle, Emitter};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
 
 /// 콘솔 창이 뜨지 않는 Command 생성
 fn silent_command(program: &str) -> Command {
@@ -38,13 +38,10 @@ pub async fn start_watcher(app: AppHandle) {
                     .unwrap_or(false);
 
                 if changed {
-                    let _ = app.emit(
-                        "git:new-commit",
-                        serde_json::json!({
-                            "repo": repo.to_string_lossy().to_string(),
-                            "head": current_head,
-                        }),
-                    );
+                    let _ = app.emit("git:new-commit", serde_json::json!({
+                        "repo": repo.to_string_lossy().to_string(),
+                        "head": current_head,
+                    }));
                 }
 
                 last_heads.insert(repo.clone(), current_head);
@@ -55,12 +52,9 @@ pub async fn start_watcher(app: AppHandle) {
             if push_line_count > 0 {
                 let prev = last_push_lines.get(&repo).copied().unwrap_or(0);
                 if prev > 0 && push_line_count > prev {
-                    let _ = app.emit(
-                        "git:new-push",
-                        serde_json::json!({
-                            "repo": repo.to_string_lossy().to_string(),
-                        }),
-                    );
+                    let _ = app.emit("git:new-push", serde_json::json!({
+                        "repo": repo.to_string_lossy().to_string(),
+                    }));
                 }
                 last_push_lines.insert(repo, push_line_count);
             }
@@ -102,9 +96,7 @@ fn read_head(repo_path: &std::path::Path) -> Option<String> {
         let packed_refs = repo_path.join(".git").join("packed-refs");
         if let Ok(packed) = std::fs::read_to_string(&packed_refs) {
             for line in packed.lines() {
-                if line.starts_with('#') {
-                    continue;
-                }
+                if line.starts_with('#') { continue; }
                 let parts: Vec<&str> = line.splitn(2, ' ').collect();
                 if parts.len() == 2 && parts[1] == ref_path {
                     return Some(parts[0].to_string());
@@ -126,10 +118,12 @@ pub fn count_today_commits(repo_path: &std::path::Path) -> u32 {
         .output();
 
     match output {
-        Ok(out) => String::from_utf8_lossy(&out.stdout)
-            .trim()
-            .parse()
-            .unwrap_or(0),
+        Ok(out) => {
+            String::from_utf8_lossy(&out.stdout)
+                .trim()
+                .parse()
+                .unwrap_or(0)
+        }
         Err(_) => 0,
     }
 }

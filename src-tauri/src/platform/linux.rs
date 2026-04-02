@@ -53,16 +53,7 @@ pub fn get_ide_pids() -> Vec<u32> {
     };
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let ide_patterns = [
-        "/code",
-        "/cursor",
-        "idea",
-        "webstorm",
-        "pycharm",
-        "goland",
-        "clion",
-        "rustrover",
-    ];
+    let ide_patterns = ["/code", "/cursor", "idea", "webstorm", "pycharm", "goland", "clion", "rustrover"];
 
     let mut pids = vec![];
     for line in stdout.lines() {

@@ -50,7 +50,9 @@ pub fn transition(current: &CatState, event: &StateEvent) -> Option<CatState> {
         (CatState::Interaction, StateEvent::TimerExpired) => Some(CatState::Idle),
 
         // ── Tired (밤 시간 코딩) ──
-        (CatState::Coding, StateEvent::IdleTimeout(_)) if is_night_time() => Some(CatState::Tired),
+        (CatState::Coding, StateEvent::IdleTimeout(_)) if is_night_time() => {
+            Some(CatState::Tired)
+        }
         (CatState::Tired, StateEvent::ActivityDetected) => Some(CatState::Coding),
 
         _ => None, // 전환 없음

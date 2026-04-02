@@ -14,7 +14,7 @@ pub struct ActivityEvent {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DailySummary {
-    pub date: String, // "2026-02-22"
+    pub date: String,                // "2026-02-22"
     pub coding_minutes: u32,
     pub commits: u32,
     pub pomodoro_sessions: u32,
@@ -28,7 +28,7 @@ pub struct DailySummary {
 #[serde(rename_all = "camelCase")]
 pub struct CodingStatus {
     pub is_coding: bool,
-    pub active_ide: Option<String>, // "VS Code" | "IntelliJ" | null
+    pub active_ide: Option<String>,  // "VS Code" | "IntelliJ" | null
     pub idle_seconds: u64,
     pub session_minutes: u32,
 }

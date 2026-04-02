@@ -18,11 +18,11 @@ pub enum CatState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CatMood {
-    Happy,    // 😺
-    Sad,      // 😿
-    Sleeping, // 😴
-    Focused,  // 🔥
-    Excited,  // 💥
+    Happy,      // 😺
+    Sad,        // 😿
+    Sleeping,   // 😴
+    Focused,    // 🔥
+    Excited,    // 💥
 }
 
 impl From<&CatState> for CatMood {

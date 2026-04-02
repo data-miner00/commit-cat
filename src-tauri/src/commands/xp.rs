@@ -1,7 +1,7 @@
-use crate::services::storage;
-use chrono::{Datelike, Local};
 use commit_cat_core::models::activity::ActivityEvent;
 use commit_cat_core::models::growth::{exp_for_level, LevelInfo};
+use crate::services::storage;
+use chrono::{Datelike, Local};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
@@ -173,9 +173,7 @@ pub async fn add_xp(app: AppHandle, amount: u32, source: String) -> Result<AddXp
     }
     if !newly_unlocked.is_empty() {
         // 자동 장착: 현재 장착 중인 아이템이 없으면 첫 해금 아이템을 장착
-        if let Some(auto_hat) =
-            commit_cat_core::items::auto_equip(&newly_unlocked, &data.cat.current_hat)
-        {
+        if let Some(auto_hat) = commit_cat_core::items::auto_equip(&newly_unlocked, &data.cat.current_hat) {
             data.cat.current_hat = Some(auto_hat.clone());
             let _ = app.emit("hat:equipped", &auto_hat);
         }
@@ -227,10 +225,7 @@ pub async fn add_xp(app: AppHandle, amount: u32, source: String) -> Result<AddXp
     // 트레이 툴팁 streak 업데이트
     if let Some(tray) = app.tray_by_id("main-tray") {
         if data.cat.streak_days > 0 {
-            let _ = tray.set_tooltip(Some(&format!(
-                "CommitCat — {} day streak",
-                data.cat.streak_days
-            )));
+            let _ = tray.set_tooltip(Some(&format!("CommitCat — {} day streak", data.cat.streak_days)));
         }
     }
 
@@ -241,10 +236,7 @@ pub async fn add_xp(app: AppHandle, amount: u32, source: String) -> Result<AddXp
     // Streak 마일스톤 이벤트 발행
     if let Some((days, bonus)) = streak_milestone {
         #[derive(Clone, Serialize)]
-        struct StreakMilestone {
-            days: u32,
-            bonus: u32,
-        }
+        struct StreakMilestone { days: u32, bonus: u32 }
         let _ = app.emit("streak:milestone", StreakMilestone { days, bonus });
     }
 
@@ -264,10 +256,7 @@ pub async fn equip_hat(app: AppHandle, hat_id: Option<String>) -> Result<(), Str
 #[tauri::command]
 pub async fn unlock_all_hats(app: AppHandle) -> Result<(), String> {
     let mut data = storage::load(&app)?;
-    let all_hats: Vec<String> = commit_cat_core::items::HATS
-        .iter()
-        .map(|h| h.id.to_string())
-        .collect();
+    let all_hats: Vec<String> = commit_cat_core::items::HATS.iter().map(|h| h.id.to_string()).collect();
     for hat in &all_hats {
         if !data.cat.unlocked_hats.contains(hat) {
             data.cat.unlocked_hats.push(hat.clone());

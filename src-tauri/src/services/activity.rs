@@ -88,9 +88,7 @@ pub async fn start_monitor(app: AppHandle) {
         was_ide_running = is_ide_running;
 
         // 5. 풀스크린 감지
-        let is_fullscreen = crate::commands::fullscreen::check_fullscreen()
-            .await
-            .unwrap_or(false);
+        let is_fullscreen = crate::commands::fullscreen::check_fullscreen().await.unwrap_or(false);
         if is_fullscreen != was_fullscreen {
             let _ = app.emit("activity:fullscreen", is_fullscreen);
             was_fullscreen = is_fullscreen;

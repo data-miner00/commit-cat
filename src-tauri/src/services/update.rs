@@ -55,10 +55,7 @@ pub async fn check_update(app: &AppHandle) -> Result<Option<String>, String> {
         .map_err(|e| format!("Failed to parse release: {}", e))?;
 
     let current = env!("CARGO_PKG_VERSION");
-    let latest_str = release
-        .tag_name
-        .strip_prefix('v')
-        .unwrap_or(&release.tag_name);
+    let latest_str = release.tag_name.strip_prefix('v').unwrap_or(&release.tag_name);
 
     let current_ver = parse_version(current);
     let latest_ver = parse_version(latest_str);
@@ -72,12 +69,9 @@ pub async fn check_update(app: &AppHandle) -> Result<Option<String>, String> {
 
     if let (Some(cur), Some(lat)) = (current_ver, latest_ver) {
         if lat > cur {
-            let _ = app.emit(
-                "update:available",
-                UpdateAvailable {
-                    latest_version: latest_str.to_string(),
-                },
-            );
+            let _ = app.emit("update:available", UpdateAvailable {
+                latest_version: latest_str.to_string(),
+            });
             return Ok(Some(latest_str.to_string()));
         }
     }

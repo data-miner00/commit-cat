@@ -64,17 +64,9 @@ pub fn get_ide_pids() -> Vec<u32> {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let ide_patterns = [
-        "Visual Studio Code.app",
-        "Cursor.app",
-        "Windsurf.app",
-        "IntelliJ IDEA",
-        "WebStorm",
-        "PyCharm",
-        "GoLand",
-        "CLion",
-        "RustRover",
-        "Xcode.app",
-        "Zed.app",
+        "Visual Studio Code.app", "Cursor.app", "Windsurf.app",
+        "IntelliJ IDEA", "WebStorm", "PyCharm", "GoLand", "CLion",
+        "RustRover", "Xcode.app", "Zed.app",
     ];
 
     let mut pids = vec![];

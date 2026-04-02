@@ -9,54 +9,14 @@ pub struct HatDefinition {
 }
 
 pub const HATS: &[HatDefinition] = &[
-    HatDefinition {
-        id: "party_hat",
-        name: "Party Hat",
-        image: "assets/item/party_hat.png",
-        unlock_condition: "First commit ever",
-    },
-    HatDefinition {
-        id: "wizard",
-        name: "Wizard Hat",
-        image: "assets/item/wizard.png",
-        unlock_condition: "Reach level 5",
-    },
-    HatDefinition {
-        id: "crown",
-        name: "Crown",
-        image: "assets/item/crown.png",
-        unlock_condition: "Reach level 10",
-    },
-    HatDefinition {
-        id: "tophat",
-        name: "Top Hat",
-        image: "assets/item/tophat.png",
-        unlock_condition: "7-day streak",
-    },
-    HatDefinition {
-        id: "santahat",
-        name: "Santa Hat",
-        image: "assets/item/santahat.png",
-        unlock_condition: "Code in December",
-    },
-    HatDefinition {
-        id: "sunglass",
-        name: "Sunglasses",
-        image: "assets/item/sunglass.png",
-        unlock_condition: "10 late-night sessions",
-    },
-    HatDefinition {
-        id: "tuna",
-        name: "Tuna",
-        image: "assets/item/tuna.png",
-        unlock_condition: "50 total commits",
-    },
-    HatDefinition {
-        id: "cornhead",
-        name: "Corn Head",
-        image: "assets/item/cornhead.png",
-        unlock_condition: "30-day streak",
-    },
+    HatDefinition { id: "party_hat", name: "Party Hat", image: "assets/item/party_hat.png", unlock_condition: "First commit ever" },
+    HatDefinition { id: "wizard", name: "Wizard Hat", image: "assets/item/wizard.png", unlock_condition: "Reach level 5" },
+    HatDefinition { id: "crown", name: "Crown", image: "assets/item/crown.png", unlock_condition: "Reach level 10" },
+    HatDefinition { id: "tophat", name: "Top Hat", image: "assets/item/tophat.png", unlock_condition: "7-day streak" },
+    HatDefinition { id: "santahat", name: "Santa Hat", image: "assets/item/santahat.png", unlock_condition: "Code in December" },
+    HatDefinition { id: "sunglass", name: "Sunglasses", image: "assets/item/sunglass.png", unlock_condition: "10 late-night sessions" },
+    HatDefinition { id: "tuna", name: "Tuna", image: "assets/item/tuna.png", unlock_condition: "50 total commits" },
+    HatDefinition { id: "cornhead", name: "Corn Head", image: "assets/item/cornhead.png", unlock_condition: "30-day streak" },
 ];
 
 /// 첫 해금 시 자동 장착할 아이템인지 판별

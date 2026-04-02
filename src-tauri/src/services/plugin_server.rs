@@ -1,8 +1,8 @@
+use commit_cat_core::models::activity::ActivityEvent;
+use commit_cat_core::models::growth::exp_for_level;
 use crate::services::storage;
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use chrono::Local;
-use commit_cat_core::models::activity::ActivityEvent;
-use commit_cat_core::models::growth::exp_for_level;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 use tokio::net::TcpListener;
@@ -94,7 +94,8 @@ async fn handle_activity(
         }
         "build_success" => {
             let _ = app.emit("plugin:build-success", ());
-            add_xp_internal(&app, 15, "build_success").map(|_| "build success +15 XP")
+            add_xp_internal(&app, 15, "build_success")
+                .map(|_| "build success +15 XP")
         }
         "build_fail" => {
             let _ = app.emit("plugin:build-fail", ());

@@ -5,7 +5,8 @@ use tauri::AppHandle;
 pub async fn clone_repo(app: AppHandle, url: String, path: String) -> Result<bool, String> {
     let clone_path = path.clone();
     tokio::task::spawn_blocking(move || {
-        git2::Repository::clone(&url, &clone_path).map_err(|e| format!("Clone failed: {}", e))
+        git2::Repository::clone(&url, &clone_path)
+            .map_err(|e| format!("Clone failed: {}", e))
     })
     .await
     .map_err(|e| format!("Task failed: {}", e))??;
@@ -37,10 +38,7 @@ pub async fn register_repo(app: tauri::AppHandle, path: String) -> Result<bool, 
 #[tauri::command]
 pub async fn get_watched_repos(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let repos = services::storage::get_watched_repos(&app);
-    Ok(repos
-        .iter()
-        .map(|p| p.to_string_lossy().to_string())
-        .collect())
+    Ok(repos.iter().map(|p| p.to_string_lossy().to_string()).collect())
 }
 
 #[tauri::command]
