@@ -174,6 +174,7 @@ export function Settings() {
   const [cloning, setCloning] = useState(false);
   const [cloneError, setCloneError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileNameSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [xp, setXp] = useState<XpStatus>({ level: 1, currentExp: 0, expToNext: 100 });
   const [githubToken, setGithubToken] = useState("");
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
@@ -255,6 +256,14 @@ export function Settings() {
   useEffect(() => {
     void refreshCodexStatus();
   }, [refreshCodexStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (profileNameSaveTimerRef.current) {
+        clearTimeout(profileNameSaveTimerRef.current);
+      }
+    };
+  }, []);
 
   const persistSettingsPatch = useCallback(async (patch: Record<string, unknown>) => {
     await invoke("update_settings_patch", { patch });
@@ -597,13 +606,7 @@ export function Settings() {
     }
   }, [applyCatProfilesResponse]);
 
-  const handleSelectedProfilePatch = useCallback(async (patch: Partial<CatProfile>) => {
-    const profile = profiles.find(candidate => candidate.id === selectedProfileId);
-    if (!profile) return;
-    const nextProfile = { ...profile, ...patch };
-    setProfiles(current => current.map(candidate => (
-      candidate.id === nextProfile.id ? nextProfile : candidate
-    )));
+  const persistProfileUpdate = useCallback(async (nextProfile: CatProfile) => {
     try {
       const response = await invoke<CatProfilesResponse>("update_cat_profile", { profile: nextProfile });
       applyCatProfilesResponse(response, nextProfile.id);
@@ -614,7 +617,17 @@ export function Settings() {
       }
       setProfileError(String(e));
     }
-  }, [applyCatProfilesResponse, profiles, selectedProfileId]);
+  }, [applyCatProfilesResponse]);
+
+  const handleSelectedProfilePatch = useCallback(async (patch: Partial<CatProfile>) => {
+    const profile = profiles.find(candidate => candidate.id === selectedProfileId);
+    if (!profile) return;
+    const nextProfile = { ...profile, ...patch };
+    setProfiles(current => current.map(candidate => (
+      candidate.id === nextProfile.id ? nextProfile : candidate
+    )));
+    await persistProfileUpdate(nextProfile);
+  }, [persistProfileUpdate, profiles, selectedProfileId]);
 
   // 모자 장착/해제
   const handleHatToggle = useCallback(async (hatId: string) => {
@@ -640,6 +653,10 @@ export function Settings() {
   }
 
   const selectedProfile = profiles.find(profile => profile.id === selectedProfileId) ?? profiles[0] ?? null;
+  const orderedProfiles = [
+    ...profiles.filter(profile => profile.id === activeProfileId),
+    ...profiles.filter(profile => profile.id !== activeProfileId),
+  ];
   const selectedProvider = aiProviderCatalog.find(provider => provider.id === aiProvider) ?? aiProviderCatalog[0] ?? null;
   const selectedModel = resolveSelectedModel(aiProvider, aiProviderModels, selectedProvider);
   const selectedModelEntry = selectedProvider?.models.find(model => model.id === selectedModel);
@@ -837,63 +854,71 @@ export function Settings() {
       {/* Cat Settings */}
       <section className="settings__section">
         <h2 className="settings__section-title">Cat</h2>
-        <div className="settings__profile-toolbar">
-          <span className="settings__color-label">Profiles</span>
-          <button className="settings__profile-add" onClick={handleCreateProfile}>
-            + New Profile
+        <div className="settings__profile-strip">
+          <button
+            type="button"
+            className="settings__profile-tile settings__profile-tile--create"
+            onClick={handleCreateProfile}
+          >
+            <div className="settings__profile-preview settings__profile-preview--create">
+              <span className="settings__profile-create-plus">+</span>
+            </div>
+            <span className="settings__profile-name">New Cat</span>
           </button>
-        </div>
-        <div className="settings__profile-list">
-          {profiles.map(profile => {
-            const personalityLabel = CAT_PERSONALITY_OPTIONS.find(option => option.id === profile.personality)?.label ?? profile.personality;
+          {orderedProfiles.map(profile => {
             const isSelected = selectedProfile?.id === profile.id;
             const isActive = activeProfileId === profile.id;
             return (
-              <div
+              <button
+                type="button"
                 key={profile.id}
-                className={`settings__profile-card ${isSelected ? "settings__profile-card--selected" : ""}`}
+                className={`settings__profile-tile ${isSelected ? "settings__profile-tile--selected" : ""}`}
                 onClick={() => setSelectedProfileId(profile.id)}
               >
-                <div className="settings__profile-card-main">
-                  <div className="settings__profile-card-title">
-                    <span>{profile.name}</span>
-                    {isActive && <span className="settings__profile-badge">Active</span>}
-                  </div>
-                  <div className="settings__profile-card-meta">
-                    <span className={`settings__profile-color settings__profile-color--${profile.color}`} />
-                    <span>{personalityLabel}</span>
-                  </div>
+                <div className={`settings__profile-preview settings__profile-preview--${profile.color}`}>
+                  {isActive && <span className="settings__profile-preview-badge">Active</span>}
+                  <img
+                    className="settings__profile-preview-image"
+                    src={`/assets/cat/${profile.color}_stand.png`}
+                    alt={profile.name}
+                  />
                 </div>
-                <div className="settings__profile-card-actions">
-                  {!isActive && (
-                    <button
-                      className="settings__profile-action"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleActivateProfile(profile.id);
-                      }}
-                    >
-                      Set Active
-                    </button>
-                  )}
-                  <button
-                    className="settings__profile-action settings__profile-action--danger"
-                    disabled={profiles.length <= 1}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void handleDeleteProfile(profile.id);
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
+                <span className="settings__profile-name">{profile.name}</span>
+              </button>
             );
           })}
         </div>
         {profileError && <div className="settings__profile-error">{profileError}</div>}
         {selectedProfile && (
           <div className="settings__profile-editor">
+            <div className="settings__profile-editor-header">
+              <div>
+                <div className="settings__profile-editor-title">{selectedProfile.name}</div>
+                <div className="settings__profile-editor-subtitle">
+                  {activeProfileId === selectedProfile.id ? "Currently active on desktop" : "Editing an inactive profile draft"}
+                </div>
+              </div>
+              <div className="settings__profile-editor-actions">
+                {activeProfileId !== selectedProfile.id && (
+                  <button
+                    type="button"
+                    className="settings__profile-activate"
+                    onClick={() => { void handleActivateProfile(selectedProfile.id); }}
+                  >
+                    Set Active
+                  </button>
+                )}
+                {profiles.length > 1 && (
+                  <button
+                    type="button"
+                    className="settings__profile-delete"
+                    onClick={() => { void handleDeleteProfile(selectedProfile.id); }}
+                  >
+                    Delete Profile
+                  </button>
+                )}
+              </div>
+            </div>
             <label className="settings__profile-field">
               <span className="settings__color-label">Name</span>
               <input
@@ -904,8 +929,21 @@ export function Settings() {
                   setProfiles(current => current.map(profile => (
                     profile.id === selectedProfile.id ? { ...profile, name: nextName } : profile
                   )));
+                  if (profileNameSaveTimerRef.current) {
+                    clearTimeout(profileNameSaveTimerRef.current);
+                  }
+                  profileNameSaveTimerRef.current = setTimeout(() => {
+                    profileNameSaveTimerRef.current = null;
+                    void persistProfileUpdate({ ...selectedProfile, name: nextName });
+                  }, 350);
                 }}
-                onBlur={(e) => { void handleSelectedProfilePatch({ name: e.target.value }); }}
+                onBlur={(e) => {
+                  if (profileNameSaveTimerRef.current) {
+                    clearTimeout(profileNameSaveTimerRef.current);
+                    profileNameSaveTimerRef.current = null;
+                  }
+                  void persistProfileUpdate({ ...selectedProfile, name: e.target.value });
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.currentTarget.blur();
@@ -929,17 +967,20 @@ export function Settings() {
             </div>
             <label className="settings__profile-field">
               <span className="settings__color-label">Personality</span>
-              <select
-                className="settings__profile-select"
-                value={selectedProfile.personality}
-                onChange={(e) => { void handleSelectedProfilePatch({ personality: e.target.value as CatProfile["personality"] }); }}
-              >
-                {CAT_PERSONALITY_OPTIONS.map(option => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <div className="settings__provider-select-wrap">
+                <select
+                  className="settings__provider-select"
+                  value={selectedProfile.personality}
+                  onChange={(e) => { void handleSelectedProfilePatch({ personality: e.target.value as CatProfile["personality"] }); }}
+                >
+                  {CAT_PERSONALITY_OPTIONS.map(option => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="settings__provider-caret">▾</span>
+              </div>
               <span className="settings__profile-help">
                 {CAT_PERSONALITY_OPTIONS.find(option => option.id === selectedProfile.personality)?.description}
               </span>
