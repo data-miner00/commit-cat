@@ -232,7 +232,8 @@ Contributions are welcome!
 
 ## 📜 License
 
-MIT License
+- **Code:** MIT License
+- **Assets (sprites, icons, pixel art):** All rights reserved. See [public/assets/LICENSE](public/assets/LICENSE). Not for redistribution or reuse without permission.
 
 ---
 
