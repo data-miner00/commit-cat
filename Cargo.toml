@@ -2,5 +2,6 @@
 members = [
     "crates/commit-cat-core",
     "src-tauri",
+    "server",
 ]
 resolver = "2"
