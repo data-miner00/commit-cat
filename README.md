@@ -211,7 +211,7 @@ npm run tauri dev
 - [ ] GitHub OAuth
 
 **v2.1 — Badge & Profile 🏅**
-- [ ] GitHub README badge (`![CommitCat](api.commitcat.dev/badge/user)`)
+- [x] GitHub README badge (`![CommitCat](api.commitcat.dev/badge/user)`)
 - [x] Public profile page
 - [ ] GitHub Codespaces support
 
@@ -241,5 +241,5 @@ Contributions are welcome!
 
 ## 💬 Status
 
-v1.2 complete — working on v1.3 IDE plugins
+v2.1 in progress — badge & profile live at [commitcat-api.fly.dev](https://commitcat-api.fly.dev)
 If you like the idea, consider giving the repo a ⭐
