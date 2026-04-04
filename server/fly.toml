@@ -1,5 +1,5 @@
-app = "commitcat-api"
-primary_region = "nrt"  # Tokyo (한국에서 가장 가까운 리전)
+app = 'commitcat-api'
+primary_region = 'nrt'
 
 [build]
   dockerfile = "Dockerfile"
@@ -7,9 +7,10 @@ primary_region = "nrt"  # Tokyo (한국에서 가장 가까운 리전)
 [http_service]
   internal_port = 3000
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
+  processes = ['app']
 
 [mounts]
   source = "commitcat_data"
@@ -17,3 +18,8 @@ primary_region = "nrt"  # Tokyo (한국에서 가장 가까운 리전)
 
 [env]
   DATABASE_URL = "sqlite:/data/commitcat.db?mode=rwc"
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
