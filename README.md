@@ -210,7 +210,7 @@ npm run tauri dev
 
 **v2.1 — Badge & Profile 🏅**
 - [ ] GitHub README badge (`![CommitCat](api.commitcat.dev/badge/user)`)
-- [ ] Public profile page
+- [x] Public profile page
 - [ ] GitHub Codespaces support
 
 **v3.0 — Multi-Platform 🌐**

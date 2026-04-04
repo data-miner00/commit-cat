@@ -24,6 +24,7 @@ pub struct UserSnapshot {
     pub exp: u32,
     pub total_commits: u32,
     pub current_streak: u32,
+    pub longest_streak: u32,
     pub current_hat: Option<String>,
     pub unlocked_hats: Vec<String>,
 }
@@ -86,7 +87,7 @@ pub async fn sync_data(
     .bind(req.snapshot.exp)
     .bind(req.snapshot.total_commits)
     .bind(req.snapshot.current_streak)
-    .bind(req.snapshot.current_streak)
+    .bind(req.snapshot.longest_streak)
     .bind(&req.snapshot.current_hat)
     .bind(&unlocked_json)
     .bind(&user_id)
