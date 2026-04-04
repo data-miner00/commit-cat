@@ -3,7 +3,7 @@ name = "commit-cat-core"
 version = "0.1.0"
 edition = "2021"
 description = "Core logic for CommitCat - platform-independent models, XP, state machine"
-license = "MIT"
+license = "AGPL-3.0"
 
 [features]
 default = []

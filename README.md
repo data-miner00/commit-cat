@@ -232,7 +232,7 @@ Contributions are welcome!
 
 ## 📜 License
 
-- **Code:** MIT License
+- **Code:** AGPL-3.0 License
 - **Assets (sprites, icons, pixel art):** All rights reserved. See [public/assets/LICENSE](public/assets/LICENSE). Not for redistribution or reuse without permission.
 
 ---

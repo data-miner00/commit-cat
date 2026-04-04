@@ -2,7 +2,7 @@
   "name": "commit-cat",
   "version": "0.3.1",
   "description": "🐱 A developer desktop pet that grows with your coding activity",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
