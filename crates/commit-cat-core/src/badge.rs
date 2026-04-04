@@ -68,44 +68,44 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
     let pet = BASE64.encode(CAT_PETTING);
 
     let streak_text = if streak > 0 {
-        format!(" | {}d streak", streak)
+        format!(" \u{00b7} {}d streak", streak)
     } else {
         String::new()
     };
-    let info_line = format!("Lv.{}  {}c{}", level, total_commits, streak_text);
+    let info_line = format!("Lv.{} \u{00b7} {} commits{}", level, total_commits, streak_text);
 
-    // Layout: [cat roaming area 200px] [circle badge on right]
-    let circle_r: u32 = 42;
-    let width: u32 = 330;
+    // Layout: [cat roaming area] [pill badge on right]
+    let cat_w: u32 = 100;
+    let cat_h: u32 = 72;
+    let width: u32 = 420;
     let height: u32 = 120;
-    let cx = width - circle_r - 18; // circle center x
-    let cy = height / 2;            // circle center y
-    let cat_w: u32 = 100;           // cat sprite width
-    let cat_h: u32 = 72;            // cat sprite height
-    let cat_y = height - cat_h - 8; // cat y position (bottom-aligned)
+    let cat_y = height - cat_h - 6;
 
-    // SMIL animation — proper state machine (16s total):
+    // Pill badge sizing
+    let uname_px = username.len() as u32 * 9 + 36;
+    let info_px = info_line.len() as u32 * 7 + 36;
+    let pill_w = uname_px.max(info_px).max(170);
+    let pill_h: u32 = 56;
+    let pill_x = width - pill_w - 16;
+    let pill_y: u32 = (height - pill_h) / 2;
+    let pill_r = pill_h / 2;
+
+    // Flip transform for left-facing sprites: translate(2*x + w, 0) scale(-1, 1)
+    let flip_tx = 2 * 8 + cat_w;
+
+    // SMIL — proper state machine flow (18s, no gaps, no teleport):
     //
-    //   stand→ → walk→ → stand→ → sit → sleep → sit → petting → sit → stand← → walk← → stand→
-    //   (→ = facing right, ← = facing left)
-    //
-    //    0-1s   stand→      x=0
-    //    1-3.5s walk→       x=0 → x=80
-    //    3.5-4.5s stand→    x=80
-    //    4.5-5.5s sit       x=80
-    //    5.5-7.5s sleep     x=80
-    //    7.5-8.5s sit       x=80
-    //    8.5-9.5s petting   x=80
-    //    9.5-10.5s sit      x=80
-    //   10.5-11s stand←     x=80
-    //   11-13.5s walk←      x=80 → x=0
-    //   13.5-14s stand→     x=0  (seamless loop back)
-    //   But to be clean: 14s → resting at start = 16s total
-    //
-    // keyTimes (16s):
-    //  1/16=0.0625   3.5/16=0.219   4.5/16=0.281   5.5/16=0.344
-    //  7.5/16=0.469  8.5/16=0.531   9.5/16=0.594  10.5/16=0.656
-    // 11/16=0.688   13.5/16=0.844  14.5/16=0.906  16/16=1.0
+    //  0-1.5s    stand→      x=0    (facing right, still)
+    //  1.5-5s    walk→       x→70   (facing right, moving right)
+    //  5-6.5s    stand→      x=70   (facing right, still)
+    //  6.5-7.5s  sit         x=70   (still)
+    //  7.5-9.5s  sleep       x=70   (still)
+    //  9.5-10.5s sit         x=70   (still)
+    // 10.5-11.5s petting     x=70   (still)
+    // 11.5-12.5s sit         x=70   (still)
+    // 12.5-13.5s stand←      x=70   (facing left, still)
+    // 13.5-17s   walk←       x→0    (facing left, moving left)
+    // 17-18s     stand→      x=0    (facing right, still — loops)
     format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="{height}" role="img" aria-label="CommitCat badge">
   <title>CommitCat - {username}</title>
@@ -113,86 +113,88 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
   <!-- Background -->
   <rect width="{width}" height="{height}" rx="14" fill="#7FD17F"/>
 
-  <!-- Circle badge -->
-  <circle cx="{cx}" cy="{cy}" r="{circle_r}" fill="#fff" opacity="0.92"/>
+  <!-- Pill badge (no tail) -->
+  <rect x="{pill_x}" y="{pill_y}" width="{pill_w}" height="{pill_h}" rx="{pill_r}" fill="#fff" opacity="0.92"/>
   <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" text-rendering="geometricPrecision" text-anchor="middle">
-    <text x="{cx}" y="{uname_y}" fill="#2a6e2a" font-size="13" font-weight="700">{username}</text>
-    <text x="{cx}" y="{info_y}" fill="#666" font-size="10">{info_line}</text>
+    <text x="{text_cx}" y="{uname_y}" fill="#2a6e2a" font-size="14" font-weight="700">{username}</text>
+    <text x="{text_cx}" y="{info_y}" fill="#666" font-size="11">{info_line}</text>
   </g>
 
-  <!-- Cat sprites (facing right) -->
+  <!-- Animated cat (SMIL) -->
   <g>
-    <animateTransform attributeName="transform" type="translate" dur="16s" repeatCount="indefinite"
-      values="0,0; 0,0; 80,0; 80,0; 80,0; 80,0; 80,0; 80,0; 80,0; 80,0; 80,0; 0,0; 0,0; 0,0"
-      keyTimes="0; 0.0625; 0.219; 0.281; 0.344; 0.469; 0.531; 0.594; 0.656; 0.688; 0.844; 0.845; 0.906; 1"
-      calcMode="linear"/>
+    <!-- Position: smooth move during walk only, still otherwise -->
+    <animateTransform attributeName="transform" type="translate" dur="18s" repeatCount="indefinite"
+      values="0,0; 0,0; 70,0; 70,0; 70,0; 70,0; 70,0; 70,0; 70,0; 70,0; 0,0; 0,0"
+      keyTimes="0; 0.083; 0.278; 0.361; 0.417; 0.528; 0.583; 0.639; 0.694; 0.750; 0.944; 1"/>
 
-    <!-- stand→: 0-1s, 3.5-4.5s, 13.5-16s (facing right) -->
+    <!-- stand→: 0-1.5s, 5-6.5s, 17-18s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{stand}" opacity="0">
-      <animate attributeName="opacity" dur="16s" repeatCount="indefinite"
-        values="1;1; 0;0; 1;1; 0;0; 0;0; 0;0; 0;0; 0;0; 0;0; 1;1"
-        keyTimes="0;0.062; 0.063;0.218; 0.219;0.280; 0.281;0.343; 0.344;0.468; 0.469;0.530; 0.531;0.593; 0.594;0.655; 0.656;0.905; 0.906;1"/>
+      <animate attributeName="opacity" dur="18s" repeatCount="indefinite"
+        values="1;1; 0;0; 1;1; 0;0; 1;1"
+        keyTimes="0;0.082; 0.083;0.277; 0.278;0.360; 0.361;0.943; 0.944;1"/>
     </image>
 
-    <!-- walk→: 1-3.5s (facing right) -->
+    <!-- walk→: 1.5-5s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{walk}" opacity="0">
-      <animate attributeName="opacity" dur="16s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="18s" repeatCount="indefinite"
         values="0;0; 1;1; 0;0"
-        keyTimes="0;0.062; 0.063;0.218; 0.219;1"/>
+        keyTimes="0;0.082; 0.083;0.277; 0.278;1"/>
     </image>
 
-    <!-- stand←: 10.5-11s (facing left, flipped) -->
-    <g transform="translate({flip_stand},0) scale(-1,1)">
+    <!-- stand←: 12.5-13.5s (flipped) -->
+    <g transform="translate({flip_tx},0) scale(-1,1)">
       <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{stand}" opacity="0">
-        <animate attributeName="opacity" dur="16s" repeatCount="indefinite"
+        <animate attributeName="opacity" dur="18s" repeatCount="indefinite"
           values="0;0; 1;1; 0;0"
-          keyTimes="0;0.655; 0.656;0.687; 0.688;1"/>
+          keyTimes="0;0.693; 0.694;0.749; 0.750;1"/>
       </image>
     </g>
 
-    <!-- walk←: 11-13.5s (facing left, flipped) -->
-    <g transform="translate({flip_walk},0) scale(-1,1)">
+    <!-- walk←: 13.5-17s (flipped) -->
+    <g transform="translate({flip_tx},0) scale(-1,1)">
       <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{walk}" opacity="0">
-        <animate attributeName="opacity" dur="16s" repeatCount="indefinite"
+        <animate attributeName="opacity" dur="18s" repeatCount="indefinite"
           values="0;0; 1;1; 0;0"
-          keyTimes="0;0.687; 0.688;0.844; 0.845;1"/>
+          keyTimes="0;0.749; 0.750;0.943; 0.944;1"/>
       </image>
     </g>
 
-    <!-- sit: 4.5-5.5s, 7.5-8.5s, 9.5-10.5s -->
+    <!-- sit: 6.5-7.5s, 9.5-10.5s, 11.5-12.5s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{sit}" opacity="0">
-      <animate attributeName="opacity" dur="16s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="18s" repeatCount="indefinite"
         values="0;0; 1;1; 0;0; 1;1; 0;0; 1;1; 0;0"
-        keyTimes="0;0.280; 0.281;0.343; 0.344;0.468; 0.469;0.530; 0.531;0.593; 0.594;0.655; 0.656;1"/>
+        keyTimes="0;0.360; 0.361;0.416; 0.417;0.527; 0.528;0.582; 0.583;0.638; 0.639;0.693; 0.694;1"/>
     </image>
 
-    <!-- sleep: 5.5-7.5s -->
+    <!-- sleep: 7.5-9.5s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{sleep}" opacity="0">
-      <animate attributeName="opacity" dur="16s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="18s" repeatCount="indefinite"
         values="0;0; 1;1; 0;0"
-        keyTimes="0;0.343; 0.344;0.468; 0.469;1"/>
+        keyTimes="0;0.416; 0.417;0.527; 0.528;1"/>
     </image>
 
-    <!-- petting: 8.5-9.5s -->
+    <!-- petting: 10.5-11.5s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{pet}" opacity="0">
-      <animate attributeName="opacity" dur="16s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="18s" repeatCount="indefinite"
         values="0;0; 1;1; 0;0"
-        keyTimes="0;0.530; 0.531;0.593; 0.594;1"/>
+        keyTimes="0;0.582; 0.583;0.638; 0.639;1"/>
     </image>
   </g>
 </svg>"##,
         width = width,
         height = height,
-        cx = cx,
-        cy = cy,
-        circle_r = circle_r,
-        uname_y = cy - 4,
-        info_y = cy + 12,
+        pill_x = pill_x,
+        pill_y = pill_y,
+        pill_w = pill_w,
+        pill_h = pill_h,
+        pill_r = pill_r,
+        text_cx = pill_x + pill_w / 2,
+        uname_y = pill_y + 22,
+        info_y = pill_y + 40,
         cat_y = cat_y,
         cat_w = cat_w,
         cat_h = cat_h,
-        flip_stand = 2 * 8 + cat_w, // translate for horizontal flip
-        flip_walk = 2 * 8 + cat_w,
+        flip_tx = flip_tx,
         username = username,
         info_line = info_line,
         stand = stand,
