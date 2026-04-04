@@ -43,6 +43,8 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         // ── State ──
+        .manage(services::activity::SharedActivityState::default())
+        .manage(std::sync::Arc::new(commands::pomodoro::PomodoroState::default()))
         .setup(|app| {
             let app_handle = app.handle().clone();
 

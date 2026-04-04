@@ -1,17 +1,20 @@
-use commit_cat_core::models::cat::CatInfo;
+use commit_cat_core::models::cat::{CatInfo, CatMood};
+use commit_cat_core::models::growth::exp_for_level;
+use crate::services::storage;
 use tauri::{AppHandle, Manager};
 
 /// 고양이 현재 상태 조회
 #[tauri::command]
-pub async fn get_cat_state() -> Result<CatInfo, String> {
-    // TODO: 실제 상태 머신에서 현재 상태 가져오기
+pub async fn get_cat_state(app: AppHandle) -> Result<CatInfo, String> {
+    let data = storage::load(&app)?;
+    let cat = &data.cat;
     Ok(CatInfo {
         state: commit_cat_core::models::cat::CatState::Idle,
-        mood: commit_cat_core::models::cat::CatMood::Happy,
-        level: 1,
-        exp: 0,
-        exp_to_next: 60,
-        streak_days: 0,
+        mood: CatMood::Happy,
+        level: cat.level,
+        exp: cat.exp,
+        exp_to_next: exp_for_level(cat.level),
+        streak_days: cat.streak_days,
     })
 }
 

@@ -1,6 +1,6 @@
 use commit_cat_core::models::activity::{ActivityEvent, CodingStatus, DailySummary};
 use crate::services::storage;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 /// 오늘 활동 요약 (이벤트에서 계산)
 #[tauri::command]
@@ -41,12 +41,15 @@ pub async fn add_coding_minute(app: AppHandle) -> Result<(), String> {
 
 /// 현재 코딩 상태
 #[tauri::command]
-pub async fn get_coding_status() -> Result<CodingStatus, String> {
-    // TODO: activity monitor에서 현재 상태
+pub async fn get_coding_status(app: AppHandle) -> Result<CodingStatus, String> {
+    let data = storage::load(&app)?;
+    let shared = app.state::<crate::services::activity::SharedActivityState>();
+    let activity = shared.0.lock().map_err(|e| format!("Lock error: {}", e))?;
+
     Ok(CodingStatus {
-        is_coding: false,
-        active_ide: None,
-        idle_seconds: 0,
-        session_minutes: 0,
+        is_coding: activity.is_ide_running,
+        active_ide: activity.active_ide.clone(),
+        idle_seconds: activity.idle_seconds,
+        session_minutes: data.today.coding_minutes,
     })
 }

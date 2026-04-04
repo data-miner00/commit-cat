@@ -1,7 +1,8 @@
 use serde::Serialize;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 /// 프론트엔드로 보내는 활동 상태
 #[derive(Debug, Clone, Serialize)]
@@ -10,6 +11,20 @@ pub struct ActivityStatus {
     pub is_ide_running: bool,
     pub active_ide: Option<String>,
     pub idle_seconds: u64,
+}
+
+/// 공유 활동 상태 (Tauri managed state)
+#[derive(Debug, Clone)]
+pub struct SharedActivityState(pub Arc<Mutex<ActivityStatus>>);
+
+impl Default for SharedActivityState {
+    fn default() -> Self {
+        Self(Arc::new(Mutex::new(ActivityStatus {
+            is_ide_running: false,
+            active_ide: None,
+            idle_seconds: 0,
+        })))
+    }
 }
 
 /// 백그라운드 활동 모니터
@@ -79,12 +94,17 @@ pub async fn start_monitor(app: AppHandle) {
             was_fullscreen = is_fullscreen;
         }
 
-        // 6. 주기적 상태 보고
+        // 6. 주기적 상태 보고 + 공유 상태 업데이트
         let status = ActivityStatus {
             is_ide_running,
             active_ide: detected_ide,
             idle_seconds,
         };
+        if let Some(shared) = app.try_state::<SharedActivityState>() {
+            if let Ok(mut state) = shared.0.lock() {
+                *state = status.clone();
+            }
+        }
         let _ = app.emit("activity:status", &status);
     }
 }
