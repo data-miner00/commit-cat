@@ -15,6 +15,14 @@
   },
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      {
+        "command": "commitcat.showSessionStats",
+        "title": "CommitCat: Show Session Stats"
+      }
+    ]
+  },
   "main": "./out/extension.js",
   "scripts": {
     "compile": "tsc -p ./",

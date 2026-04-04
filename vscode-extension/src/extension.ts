@@ -7,6 +7,21 @@ const CODING_INTERVAL_MS = 60_000; // 60 seconds
 let codingTimer: NodeJS.Timeout | undefined;
 let statusBarItem: vscode.StatusBarItem;
 
+let sessionSaveCount = 0;
+let sessionCodingMinutes = 0;
+const SESSION_COMMAND_ID = "commitcat.showSessionStats";
+
+function updateStatusBar(): void {
+  const parts: string[] = ["$(heart) CommitCat"];
+  if (sessionCodingMinutes > 0) {
+    parts.push(`${sessionCodingMinutes}m`);
+  }
+  if (sessionSaveCount > 0) {
+    parts.push(`${sessionSaveCount} saves`);
+  }
+  statusBarItem.text = parts.join(" · ");
+}
+
 /** POST JSON to CommitCat's local HTTP server */
 function postActivity(body: Record<string, unknown>): void {
   const data = JSON.stringify(body);
@@ -42,13 +57,25 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   statusBarItem.text = "$(heart) CommitCat";
   statusBarItem.tooltip = "CommitCat is tracking your activity";
+  statusBarItem.command = SESSION_COMMAND_ID;
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
+
+  // ── Session stats command ──
+  context.subscriptions.push(
+    vscode.commands.registerCommand(SESSION_COMMAND_ID, () => {
+      vscode.window.showInformationMessage(
+        `CommitCat session: ${sessionCodingMinutes} min coded, ${sessionSaveCount} saves`
+      );
+    })
+  );
 
   // ── 1. Coding time: send heartbeat every 60s while editor is focused ──
   codingTimer = setInterval(() => {
     if (vscode.window.state.focused) {
       postActivity({ type: "coding_time", seconds: 60 });
+      sessionCodingMinutes += 1;
+      updateStatusBar();
     }
   }, CODING_INTERVAL_MS);
 
@@ -70,6 +97,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(() => {
       postActivity({ type: "save" });
+      sessionSaveCount += 1;
+      updateStatusBar();
     })
   );
 
