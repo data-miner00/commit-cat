@@ -8,6 +8,7 @@ WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 COPY server/ server/
+COPY public/ public/
 
 # Create dummy src-tauri with both main.rs and lib.rs so workspace resolves
 RUN mkdir -p src-tauri/src && \
