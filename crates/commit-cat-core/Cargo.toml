@@ -8,12 +8,13 @@ license = "AGPL-3.0"
 [features]
 default = []
 native = ["directories"]
-server = []
+server = ["base64"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
+base64 = { version = "0.22", optional = true }
 
 # native only
 directories = { version = "5", optional = true }
