@@ -75,74 +75,74 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
 
     let info = format!("Lv.{} \u{00b7} {} commits{}", level, total_commits, streak_text);
 
-    // Dynamic width: base 110 (cat area) + text width
-    let username_px = username.len() as u32 * 9 + 30;
-    let info_px = info.len() as u32 * 7 + 30;
+    // Dynamic width: base 150 (cat area) + text width
+    let username_px = username.len() as u32 * 10 + 40;
+    let info_px = info.len() as u32 * 8 + 40;
     let text_w = username_px.max(info_px);
-    let bubble_w = text_w.max(180);
-    let width = bubble_w + 115; // cat area + padding
+    let bubble_w = text_w.max(200);
+    let width = bubble_w + 155; // cat area + padding
 
     // SMIL animation timeline (12s total):
-    //   0-2s   stand   (at x=12)
-    //   2-4s   walk    (moving to x=30)
-    //   4-5s   stand   (at x=30)
-    //   5-7s   walk    (moving back to x=12)
-    //   7-9s   sit     (at x=20)
-    //   9-10.5s sleep  (at x=20)
-    //  10.5-12s petting(at x=20)
+    //   0-2s   stand   (at x=10)
+    //   2-4s   walk    (moving to x=35)
+    //   4-5s   stand   (at x=35)
+    //   5-7s   walk    (moving back to x=10)
+    //   7-9s   sit     (at x=18)
+    //   9-10.5s sleep  (at x=18)
+    //  10.5-12s petting(at x=18)
     format!(
-        r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="120" role="img" aria-label="CommitCat badge">
+        r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="150" role="img" aria-label="CommitCat badge">
   <title>CommitCat - {username}</title>
 
   <!-- Background -->
-  <rect width="{width}" height="120" rx="12" fill="#1a1a2e"/>
+  <rect width="{width}" height="150" rx="14" fill="#7FD17F"/>
 
   <!-- Speech bubble -->
-  <rect x="95" y="10" width="{bubble_w}" height="58" rx="10" fill="#2d2d44"/>
-  <polygon points="110,68 96,82 124,68" fill="#2d2d44"/>
+  <rect x="130" y="12" width="{bubble_w}" height="62" rx="12" fill="#fff" opacity="0.9"/>
+  <polygon points="146,74 128,90 160,74" fill="#fff" opacity="0.9"/>
 
   <!-- Bubble text -->
   <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" text-rendering="geometricPrecision">
-    <text x="112" y="35" fill="#ffd700" font-size="14" font-weight="700">{username}</text>
-    <text x="112" y="55" fill="#b0b0c8" font-size="12">{info}</text>
+    <text x="148" y="40" fill="#2a6e2a" font-size="16" font-weight="700">{username}</text>
+    <text x="148" y="62" fill="#555" font-size="13">{info}</text>
   </g>
 
   <!-- Animated cat (SMIL) -->
   <g>
     <animateTransform attributeName="transform" type="translate" dur="12s" repeatCount="indefinite"
-      values="0,0; 0,0; 18,0; 18,0; 18,0; 0,0; 8,0; 8,0; 8,0; 0,0"
+      values="0,0; 0,0; 25,0; 25,0; 25,0; 0,0; 10,0; 10,0; 10,0; 0,0"
       keyTimes="0; 0.167; 0.333; 0.333; 0.417; 0.583; 0.583; 0.75; 0.875; 1"/>
 
     <!-- stand: 0-2s, 4-5s -->
-    <image x="12" y="58" width="75" height="54" href="data:image/png;base64,{stand}" opacity="0">
+    <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{stand}" opacity="0">
       <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
         values="1; 1; 0; 0; 1; 1; 0; 0; 0; 0; 0; 0; 1"
         keyTimes="0; 0.166; 0.167; 0.332; 0.333; 0.416; 0.417; 0.583; 0.75; 0.875; 0.99; 0.999; 1"/>
     </image>
 
     <!-- walk: 2-4s, 5-7s -->
-    <image x="12" y="58" width="75" height="54" href="data:image/png;base64,{walk}" opacity="0">
+    <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{walk}" opacity="0">
       <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
         values="0; 0; 1; 1; 0; 0; 1; 1; 0; 0; 0; 0"
         keyTimes="0; 0.166; 0.167; 0.332; 0.333; 0.416; 0.417; 0.583; 0.584; 0.75; 0.875; 1"/>
     </image>
 
     <!-- sit: 7-9s -->
-    <image x="12" y="58" width="75" height="54" href="data:image/png;base64,{sit}" opacity="0">
+    <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{sit}" opacity="0">
       <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
         values="0; 0; 1; 1; 0; 0"
         keyTimes="0; 0.583; 0.584; 0.749; 0.75; 1"/>
     </image>
 
     <!-- sleep: 9-10.5s -->
-    <image x="12" y="58" width="75" height="54" href="data:image/png;base64,{sleep}" opacity="0">
+    <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{sleep}" opacity="0">
       <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
         values="0; 0; 1; 1; 0; 0"
         keyTimes="0; 0.749; 0.75; 0.874; 0.875; 1"/>
     </image>
 
     <!-- petting: 10.5-12s -->
-    <image x="12" y="58" width="75" height="54" href="data:image/png;base64,{pet}" opacity="0">
+    <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{pet}" opacity="0">
       <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
         values="0; 0; 1; 1"
         keyTimes="0; 0.874; 0.875; 1"/>
