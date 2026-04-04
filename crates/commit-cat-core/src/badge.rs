@@ -85,19 +85,19 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
     // Flip = face right: translate(2*x + w, 0) scale(-1, 1)
     let flip_tx = 2 * 8 + cat_w;
 
-    // SMIL — 17s, sprite default = faces LEFT
+    // SMIL — 15s, sprite default = faces LEFT
     //
     //  0-1.5s    stand←      x=70   (native left, still)
-    //  1.5-4.5s  walk←       x=70→0 (native left, moving left, 3s)
-    //  4.5-6s    stand←      x=0    (native left, still)
-    //  6-7s      sit         x=0    (still)
-    //  7-9s      sleep       x=0    (still)
-    //  9-10s     sit         x=0    (still)
-    // 10-11s     petting     x=0    (still)
-    // 11-12s     sit         x=0    (still)
-    // 12-13s     stand→      x=0    (flipped right, still)
-    // 13-16s     walk→       x=0→70 (flipped right, moving right, 3s)
-    // 16-17s     stand←      x=70   (native left, still — loops)
+    //  1.5-3.5s  walk←       x=70→0 (native left, moving left, 2s)
+    //  3.5-5s    stand←      x=0    (native left, still)
+    //  5-6s      sit         x=0    (still)
+    //  6-8s      sleep       x=0    (still)
+    //  8-9s      sit         x=0    (still)
+    //  9-10s     petting     x=0    (still)
+    // 10-11s     sit         x=0    (still)
+    // 11-12s     stand→      x=0    (flipped right, still)
+    // 12-14s     walk→       x=0→70 (flipped right, moving right, 2s)
+    // 14-15s     stand←      x=70   (native left, still — loops)
     format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="{height}" role="img" aria-label="CommitCat badge">
   <title>CommitCat - {username}</title>
@@ -114,61 +114,61 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
   <!-- Animated cat (SMIL) -->
   <g>
     <!-- Position: start at 70, walk left to 0, stay, walk right to 70 -->
-    <animateTransform attributeName="transform" type="translate" dur="17s" repeatCount="indefinite"
+    <animateTransform attributeName="transform" type="translate" dur="15s" repeatCount="indefinite"
       values="70,0; 70,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 70,0; 70,0"
-      keyTimes="0; 0.088; 0.265; 0.353; 0.412; 0.529; 0.588; 0.647; 0.706; 0.765; 0.941; 1"/>
+      keyTimes="0; 0.100; 0.233; 0.333; 0.400; 0.533; 0.600; 0.667; 0.733; 0.800; 0.933; 1"/>
 
-    <!-- stand← (native): 0-1.5s, 4.5-6s, 16-17s -->
+    <!-- stand← (native): 0-1.5s, 3.5-5s, 14-15s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{stand}" opacity="0">
-      <animate attributeName="opacity" dur="17s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
         values="1;1; 0;0; 1;1; 0;0; 1;1"
-        keyTimes="0;0.087; 0.088;0.264; 0.265;0.352; 0.353;0.940; 0.941;1"/>
+        keyTimes="0;0.099; 0.100;0.232; 0.233;0.332; 0.333;0.932; 0.933;1"/>
     </image>
 
-    <!-- walk← (native): 1.5-4.5s -->
+    <!-- walk← (native): 1.5-3.5s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{walk}" opacity="0">
-      <animate attributeName="opacity" dur="17s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
         values="0;0; 1;1; 0;0"
-        keyTimes="0;0.087; 0.088;0.264; 0.265;1"/>
+        keyTimes="0;0.099; 0.100;0.232; 0.233;1"/>
     </image>
 
-    <!-- stand→ (flipped): 12-13s -->
+    <!-- stand→ (flipped): 11-12s -->
     <g transform="translate({flip_tx},0) scale(-1,1)">
       <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{stand}" opacity="0">
-        <animate attributeName="opacity" dur="17s" repeatCount="indefinite"
+        <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
           values="0;0; 1;1; 0;0"
-          keyTimes="0;0.705; 0.706;0.764; 0.765;1"/>
+          keyTimes="0;0.732; 0.733;0.799; 0.800;1"/>
       </image>
     </g>
 
-    <!-- walk→ (flipped): 13-16s -->
+    <!-- walk→ (flipped): 12-14s -->
     <g transform="translate({flip_tx},0) scale(-1,1)">
       <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{walk}" opacity="0">
-        <animate attributeName="opacity" dur="17s" repeatCount="indefinite"
+        <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
           values="0;0; 1;1; 0;0"
-          keyTimes="0;0.764; 0.765;0.940; 0.941;1"/>
+          keyTimes="0;0.799; 0.800;0.932; 0.933;1"/>
       </image>
     </g>
 
-    <!-- sit: 6-7s, 9-10s, 11-12s -->
+    <!-- sit: 5-6s, 8-9s, 10-11s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{sit}" opacity="0">
-      <animate attributeName="opacity" dur="17s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
         values="0;0; 1;1; 0;0; 1;1; 0;0; 1;1; 0;0"
-        keyTimes="0;0.352; 0.353;0.411; 0.412;0.528; 0.529;0.587; 0.588;0.646; 0.647;0.705; 0.706;1"/>
+        keyTimes="0;0.332; 0.333;0.399; 0.400;0.532; 0.533;0.599; 0.600;0.666; 0.667;0.732; 0.733;1"/>
     </image>
 
-    <!-- sleep: 7-9s -->
+    <!-- sleep: 6-8s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{sleep}" opacity="0">
-      <animate attributeName="opacity" dur="17s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
         values="0;0; 1;1; 0;0"
-        keyTimes="0;0.411; 0.412;0.528; 0.529;1"/>
+        keyTimes="0;0.399; 0.400;0.532; 0.533;1"/>
     </image>
 
-    <!-- petting: 10-11s -->
+    <!-- petting: 9-10s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{pet}" opacity="0">
-      <animate attributeName="opacity" dur="17s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
         values="0;0; 1;1; 0;0"
-        keyTimes="0;0.587; 0.588;0.646; 0.647;1"/>
+        keyTimes="0;0.599; 0.600;0.666; 0.667;1"/>
     </image>
   </g>
 </svg>"##,
