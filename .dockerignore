@@ -1,0 +1,40 @@
+# Development and editor artifacts
+.git
+.gitignore
+.github
+.vscode
+.idea
+*.md
+!README.md
+
+# Build artifacts
+target/
+*.lock.bak
+
+# Tauri desktop app sources (not needed for server build)
+src-tauri/src/
+src-tauri/icons/
+src-tauri/capabilities/
+src-tauri/gen/
+
+# Frontend / web assets not used by server
+src/
+index.html
+vite.config.*
+tsconfig*.json
+package*.json
+node_modules/
+*.css
+*.ts
+*.tsx
+
+# Public assets: only cat sprites are needed (copied explicitly in Dockerfile)
+public/assets/LICENSE
+public/assets/item/
+
+# CI, docs, config
+.omc/
+.claude/
+fly.toml
+Dockerfile
+docker-compose*

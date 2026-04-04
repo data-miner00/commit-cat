@@ -4,17 +4,22 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/li
 
 WORKDIR /app
 
-# Copy workspace files
+# Copy manifest files first for better layer caching
 COPY Cargo.toml Cargo.lock ./
-COPY crates/ crates/
-COPY server/ server/
-COPY public/ public/
 
 # Create dummy src-tauri with both main.rs and lib.rs so workspace resolves
 RUN mkdir -p src-tauri/src && \
     echo "fn main() {}" > src-tauri/src/main.rs && \
     echo "" > src-tauri/src/lib.rs
 COPY src-tauri/Cargo.toml src-tauri/Cargo.toml
+
+# Copy only the cat sprites required by include_bytes! in badge.rs
+# These are embedded at compile time; the runtime image does not need public/
+COPY public/assets/cat/ public/assets/cat/
+
+# Copy source code last (most frequently changed)
+COPY crates/ crates/
+COPY server/ server/
 
 # Build server only
 RUN cargo build --release -p commit-cat-server
