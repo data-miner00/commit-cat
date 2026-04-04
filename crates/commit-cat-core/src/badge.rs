@@ -15,24 +15,23 @@ const CAT_SLEEP: &[u8] = include_bytes!("../../../public/assets/cat/orange_sit2.
 const CAT_PETTING: &[u8] = include_bytes!("../../../public/assets/cat/orange_petting.png");
 
 /// Generate an SVG badge for GitHub README embedding
-/// With "server" feature: animated cat with speech bubble
+/// With "server" feature: animated cat walking around
 /// Without: simple text badge
-pub fn generate_badge(level: u32, streak: u32, total_commits: u32, username: &str) -> String {
+pub fn generate_badge(contributions: u32, year: &str, username: &str) -> String {
     #[cfg(feature = "server")]
     {
-        generate_animated_badge(level, streak, total_commits, username)
+        generate_animated_badge(contributions, year, username)
     }
     #[cfg(not(feature = "server"))]
     {
-        generate_simple_badge(level, streak, total_commits, username)
+        generate_simple_badge(contributions, year, username)
     }
 }
 
 // Simple text-only badge (desktop / non-server builds)
 #[cfg(not(feature = "server"))]
-fn generate_simple_badge(level: u32, streak: u32, total_commits: u32, username: &str) -> String {
-    let streak_text = if streak > 0 { format!(" \u{00b7} {}d streak", streak) } else { String::new() };
-    let label = format!("\u{1f431} {} \u{00b7} Lv.{}{} \u{00b7} {} commits", username, level, streak_text, total_commits);
+fn generate_simple_badge(contributions: u32, year: &str, username: &str) -> String {
+    let label = format!("\u{1f431} {} \u{00b7} {} contributions in {}", username, contributions, year);
     let text_width = label.len() as u32 * 7 + 20;
     let width = text_width.max(200);
 
@@ -60,19 +59,14 @@ fn generate_simple_badge(level: u32, streak: u32, total_commits: u32, username: 
 
 /// Animated cat badge with speech bubble
 #[cfg(feature = "server")]
-fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username: &str) -> String {
+fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> String {
     let stand = BASE64.encode(CAT_STAND);
     let walk = BASE64.encode(CAT_WALK);
     let sit = BASE64.encode(CAT_SIT);
     let sleep = BASE64.encode(CAT_SLEEP);
     let pet = BASE64.encode(CAT_PETTING);
 
-    let streak_text = if streak > 0 {
-        format!(" \u{00b7} {}d streak", streak)
-    } else {
-        String::new()
-    };
-    let info_line = format!("Lv.{} \u{00b7} {} commits{}", level, total_commits, streak_text);
+    let info_line = format!("{} contributions in {}", contributions, year);
 
     // Sprite faces LEFT by default. Flip (scaleX -1) for RIGHT.
     // Layout: cat roams left area, white text upper-right
@@ -224,16 +218,16 @@ mod tests {
 
     #[test]
     fn badge_contains_username() {
-        let svg = generate_badge(10, 5, 100, "testuser");
+        let svg = generate_badge(295, "2026", "testuser");
         assert!(svg.contains("testuser"));
-        assert!(svg.contains("Lv.10"));
-        assert!(svg.contains("100 commits"));
+        assert!(svg.contains("295 contributions"));
+        assert!(svg.contains("2026"));
     }
 
     #[test]
-    fn badge_no_streak_when_zero() {
-        let svg = generate_badge(1, 0, 5, "newuser");
-        assert!(!svg.contains("streak"));
+    fn badge_zero_contributions() {
+        let svg = generate_badge(0, "2026", "newuser");
+        assert!(svg.contains("0 contributions"));
     }
 
     #[test]
