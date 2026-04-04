@@ -89,34 +89,34 @@ fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> St
     //
     // (sprite, x_start, x_end, duration_secs)
     let phases: &[(u8, u32, u32, f64)] = &[
-        // Start at right side, look left
-        (0, 190, 190, 1.5),   // stand← at 190
-        (1, 190, 100, 1.0),   // walk← to 100
-        (0, 100, 100, 1.5),   // stand← at 100
-        (4, 100, 100, 1.5),   // sit
-        (5, 100, 100, 3.0),   // sleep
-        (4, 100, 100, 1.0),   // sit (wake up)
-        // Turn right, walk to right
-        (2, 100, 100, 0.8),   // stand→
-        (3, 100, 200, 1.0),   // walk→ to 200
-        (2, 200, 200, 1.5),   // stand→ at 200
-        (4, 200, 200, 1.5),   // sit
-        (6, 200, 200, 2.0),   // petting
-        (4, 200, 200, 1.0),   // sit
-        // Turn left, walk to left side
-        (0, 200, 200, 0.8),   // stand←
-        (1, 200, 60, 1.0),    // walk← to 60
-        (0, 60, 60, 1.5),     // stand← at 60
-        (4, 60, 60, 2.0),     // sit
-        (5, 60, 60, 2.5),     // sleep
-        (4, 60, 60, 1.0),     // sit (wake up)
-        (6, 60, 60, 1.5),     // petting
-        (4, 60, 60, 0.8),     // sit
-        // Turn right, walk back to start position
-        (2, 60, 60, 0.8),     // stand→
-        (3, 60, 140, 1.0),    // walk→ to 140
-        (2, 140, 140, 1.0),   // stand→ briefly
-        (3, 140, 190, 1.0),   // walk→ to 190 (back to loop start)
+        // Start at right, look left
+        (0, 120, 120, 1.5),   // stand← at 120
+        (1, 120, 50, 1.0),    // walk← to 50
+        (0, 50, 50, 1.5),     // stand← at 50
+        (4, 50, 50, 1.5),     // sit
+        (5, 50, 50, 3.0),     // sleep
+        (4, 50, 50, 1.0),     // sit (wake up)
+        // Turn right, walk right
+        (2, 50, 50, 0.8),     // stand→
+        (3, 50, 120, 1.0),    // walk→ to 120
+        (2, 120, 120, 1.5),   // stand→ at 120
+        (4, 120, 120, 1.5),   // sit
+        (6, 120, 120, 2.0),   // petting
+        (4, 120, 120, 1.0),   // sit
+        // Turn left, walk left
+        (0, 120, 120, 0.8),   // stand←
+        (1, 120, 20, 1.0),    // walk← to 20
+        (0, 20, 20, 1.5),     // stand← at 20
+        (4, 20, 20, 2.0),     // sit
+        (5, 20, 20, 2.5),     // sleep
+        (4, 20, 20, 1.0),     // sit (wake up)
+        (6, 20, 20, 1.5),     // petting
+        (4, 20, 20, 0.8),     // sit
+        // Turn right, walk back to start
+        (2, 20, 20, 0.8),     // stand→
+        (3, 20, 80, 1.0),     // walk→ to 80
+        (2, 80, 80, 1.0),     // stand→ briefly
+        (3, 80, 120, 1.0),    // walk→ to 120 (loop)
     ];
 
     let total: f64 = phases.iter().map(|p| p.3).sum();
