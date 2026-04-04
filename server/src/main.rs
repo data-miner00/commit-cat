@@ -25,6 +25,7 @@ async fn main() {
         .route("/api/v1/sync", put(routes::sync::sync_data))
         .route("/api/v1/sync", get(routes::sync::get_data))
         .route("/badge/{username}", get(routes::badge::get_badge))
+        .route("/profile/{username}", get(routes::profile::get_profile_page))
         .route("/api/v1/profile/{username}", get(routes::profile::get_profile))
         .route("/health", get(|| async { "ok" }))
         .layer(CorsLayer::permissive())
