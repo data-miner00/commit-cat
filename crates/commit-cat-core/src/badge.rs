@@ -151,34 +151,61 @@ fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> St
     let translate_kt = final_times.join("; ");
     let translate_v = final_values.join("; ");
 
-    // Build opacity keyTimes/values for each sprite
+    // Build opacity keyTimes/values for each sprite.
+    // For each sprite: walk through ALL phases, output 0 or 1 at each boundary.
     // 7 sprites: stand←(0), walk←(1), stand→(2), walk→(3), sit(4), sleep(5), petting(6)
-    let mut sprite_opacities: Vec<(Vec<String>, Vec<String>)> = vec![(vec![], vec![]); 7];
-    t = 0.0;
-    for phase in phases {
-        let sprite_idx = phase.0 as usize;
-        let t_on = t / total;
-        let t_off = (t + phase.3) / total;
-        let entry = &mut sprite_opacities[sprite_idx];
-        if entry.0.is_empty() || entry.1.last().map(|v| v.as_str()) == Some("0") {
-            entry.0.push(format!("{:.4}", (t_on - 0.001).max(0.0)));
-            entry.1.push("0".to_string());
+    let eps = 0.001;
+    let mut sprite_opacities: Vec<(Vec<String>, Vec<String>)> = Vec::new();
+    for s in 0..7u8 {
+        let mut kt = Vec::new();
+        let mut vl = Vec::new();
+        let mut t_acc = 0.0_f64;
+        let first_sprite = phases[0].0;
+
+        // Initial state
+        kt.push("0.0000".to_string());
+        vl.push(if s == first_sprite { "1" } else { "0" }.to_string());
+
+        for phase in phases {
+            let t_start = t_acc / total;
+            let _t_end = (t_acc + phase.3) / total;
+            let is_me = phase.0 == s;
+            let was_on = vl.last().map(|v| v.as_str()) == Some("1");
+
+            if is_me && !was_on {
+                // Turn on: insert 0 just before, then 1
+                let t_before = (t_start - eps).max(0.0);
+                if t_before > 0.0 {
+                    kt.push(format!("{:.4}", t_before));
+                    vl.push("0".to_string());
+                }
+                kt.push(format!("{:.4}", t_start));
+                vl.push("1".to_string());
+            } else if !is_me && was_on {
+                // Turn off: insert 1 just before, then 0
+                let t_before = (t_start - eps).max(0.0);
+                kt.push(format!("{:.4}", t_before));
+                vl.push("1".to_string());
+                kt.push(format!("{:.4}", t_start));
+                vl.push("0".to_string());
+            }
+            t_acc += phase.3;
         }
-        entry.0.push(format!("{:.4}", t_on));
-        entry.1.push("1".to_string());
-        entry.0.push(format!("{:.4}", t_off.min(0.999)));
-        entry.1.push("1".to_string());
-        t += phase.3;
-    }
-    // Close all sprites: ensure they end at 1.0
-    for s in 0..7usize {
-        let entry = &mut sprite_opacities[s];
-        if entry.1.last().map(|v| v.as_str()) == Some("1") {
-            entry.0.push("0.9999".to_string());
-            entry.1.push("0".to_string());
+
+        // Close: match first frame for seamless loop
+        let last_val = vl.last().map(|v| v.as_str()).unwrap_or("0");
+        let loop_val = if s == first_sprite { "1" } else { "0" };
+        if last_val != loop_val {
+            kt.push(format!("{:.4}", (1.0 - eps)));
+            vl.push(last_val.to_string());
+            kt.push("1.0000".to_string());
+            vl.push(loop_val.to_string());
+        } else {
+            kt.push("1.0000".to_string());
+            vl.push(loop_val.to_string());
         }
-        entry.0.push("1.0000".to_string());
-        entry.1.push(if s == phases[0].0 as usize { "1" } else { "0" }.to_string());
+
+        sprite_opacities.push((kt, vl));
     }
 
     let opacity_attr = |idx: usize| -> (String, String) {
