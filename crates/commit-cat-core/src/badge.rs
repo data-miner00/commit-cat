@@ -91,21 +91,21 @@ fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> St
     let phases: &[(u8, u32, u32, f64)] = &[
         // Start at right side, look left
         (0, 280, 280, 1.5),   // stand← at 280
-        (1, 280, 100, 3.0),   // walk← to 100
+        (1, 280, 100, 1.0),   // walk← to 100
         (0, 100, 100, 1.5),   // stand← at 100
         (4, 100, 100, 1.5),   // sit
         (5, 100, 100, 3.0),   // sleep
         (4, 100, 100, 1.0),   // sit (wake up)
         // Turn right, walk to far right
         (2, 100, 100, 0.8),   // stand→
-        (3, 100, 300, 3.5),   // walk→ to 300
+        (3, 100, 300, 1.0),   // walk→ to 300
         (2, 300, 300, 1.5),   // stand→ at 300
         (4, 300, 300, 1.5),   // sit
         (6, 300, 300, 2.0),   // petting
         (4, 300, 300, 1.0),   // sit
         // Turn left, walk to left side
         (0, 300, 300, 0.8),   // stand←
-        (1, 300, 30, 4.5),    // walk← to 30
+        (1, 300, 30, 1.0),    // walk← to 30
         (0, 30, 30, 1.5),     // stand← at 30
         (4, 30, 30, 2.0),     // sit
         (5, 30, 30, 2.5),     // sleep
@@ -114,9 +114,9 @@ fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> St
         (4, 30, 30, 0.8),     // sit
         // Turn right, walk back to start position
         (2, 30, 30, 0.8),     // stand→
-        (3, 30, 200, 3.0),    // walk→ to 200
+        (3, 30, 200, 1.0),    // walk→ to 200
         (2, 200, 200, 1.0),   // stand→ briefly
-        (3, 200, 280, 1.5),   // walk→ to 280 (back to loop start)
+        (3, 200, 280, 1.0),   // walk→ to 280 (back to loop start)
     ];
 
     let total: f64 = phases.iter().map(|p| p.3).sum();
