@@ -60,110 +60,174 @@ fn generate_simple_badge(contributions: u32, year: &str, username: &str) -> Stri
 /// Animated cat badge with speech bubble
 #[cfg(feature = "server")]
 fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> String {
-    let stand = BASE64.encode(CAT_STAND);
-    let walk = BASE64.encode(CAT_WALK);
-    let sit = BASE64.encode(CAT_SIT);
-    let sleep = BASE64.encode(CAT_SLEEP);
-    let pet = BASE64.encode(CAT_PETTING);
+    let stand_b64 = BASE64.encode(CAT_STAND);
+    let walk_b64 = BASE64.encode(CAT_WALK);
+    let sit_b64 = BASE64.encode(CAT_SIT);
+    let sleep_b64 = BASE64.encode(CAT_SLEEP);
+    let pet_b64 = BASE64.encode(CAT_PETTING);
 
     let info_line = format!("{} contributions in {}", contributions, year);
 
-    // Sprite faces LEFT by default. Flip (scaleX -1) for RIGHT.
-    // Layout: cat roams left area, white text upper-right
     let cat_w: u32 = 100;
     let cat_h: u32 = 72;
     let width: u32 = 420;
     let height: u32 = 120;
     let cat_y = height - cat_h - 6;
-
-    // Flip = face right: translate(2*x + w, 0) scale(-1, 1)
     let flip_tx = 2 * 8 + cat_w;
 
-    // SMIL — 15s, sprite default = faces LEFT
-    // Cat roams full width: translate 0 ↔ 300
+    // Sprite faces LEFT natively. Flip for RIGHT.
+    // Phase-based animation: define sequence, auto-compute keyTimes.
     //
-    //  0-1.5s    stand←      x=300  (native left, still)
-    //  1.5-3.5s  walk←       x=300→0 (native left, moving left, 2s)
-    //  3.5-5s    stand←      x=0    (native left, still)
-    //  5-6s      sit         x=0    (still)
-    //  6-8s      sleep       x=0    (still)
-    //  8-9s      sit         x=0    (still)
-    //  9-10s     petting     x=0    (still)
-    // 10-11s     sit         x=0    (still)
-    // 11-12s     stand→      x=0    (flipped right, still)
-    // 12-14s     walk→       x=0→300 (flipped right, moving right, 2s)
-    // 14-15s     stand←      x=300  (native left, still — loops)
+    // Sprite indices:
+    //   0 = stand native (left)
+    //   1 = walk native (left)
+    //   2 = stand flipped (right)
+    //   3 = walk flipped (right)
+    //   4 = sit
+    //   5 = sleep
+    //   6 = petting
+    //
+    // (sprite, x_start, x_end, duration_secs)
+    let phases: &[(u8, u32, u32, f64)] = &[
+        // Start at right side, look left
+        (0, 280, 280, 1.5),   // stand← at 280
+        (1, 280, 100, 3.0),   // walk← to 100
+        (0, 100, 100, 1.5),   // stand← at 100
+        (4, 100, 100, 1.5),   // sit
+        (5, 100, 100, 3.0),   // sleep
+        (4, 100, 100, 1.0),   // sit (wake up)
+        // Turn right, walk to far right
+        (2, 100, 100, 0.8),   // stand→
+        (3, 100, 300, 3.5),   // walk→ to 300
+        (2, 300, 300, 1.5),   // stand→ at 300
+        (4, 300, 300, 1.5),   // sit
+        (6, 300, 300, 2.0),   // petting
+        (4, 300, 300, 1.0),   // sit
+        // Turn left, walk to left side
+        (0, 300, 300, 0.8),   // stand←
+        (1, 300, 30, 4.5),    // walk← to 30
+        (0, 30, 30, 1.5),     // stand← at 30
+        (4, 30, 30, 2.0),     // sit
+        (5, 30, 30, 2.5),     // sleep
+        (4, 30, 30, 1.0),     // sit (wake up)
+        (6, 30, 30, 1.5),     // petting
+        (4, 30, 30, 0.8),     // sit
+        // Turn right, walk back to start position
+        (2, 30, 30, 0.8),     // stand→
+        (3, 30, 200, 3.0),    // walk→ to 200
+        (2, 200, 200, 1.0),   // stand→ briefly
+        (3, 200, 280, 1.5),   // walk→ to 280 (back to loop start)
+    ];
+
+    let total: f64 = phases.iter().map(|p| p.3).sum();
+    let dur = total.ceil() as u32;
+
+    // Build translate keyTimes/values
+    let mut translate_times = Vec::new();
+    let mut translate_values = Vec::new();
+    let mut t = 0.0_f64;
+    for phase in phases {
+        let t_start = t / total;
+        translate_times.push(format!("{:.4}", t_start));
+        translate_values.push(format!("{},0", phase.1));
+        t += phase.3;
+        let t_end = t / total;
+        translate_times.push(format!("{:.4}", t_end.min(1.0)));
+        translate_values.push(format!("{},0", phase.2));
+    }
+    // Deduplicate consecutive identical time entries
+    let mut final_times = vec![translate_times[0].clone()];
+    let mut final_values = vec![translate_values[0].clone()];
+    for i in 1..translate_times.len() {
+        if translate_times[i] != *final_times.last().unwrap() {
+            final_times.push(translate_times[i].clone());
+            final_values.push(translate_values[i].clone());
+        }
+    }
+    // Ensure ends at 1.0000
+    if let Some(last) = final_times.last_mut() {
+        *last = "1.0000".to_string();
+    }
+    let translate_kt = final_times.join("; ");
+    let translate_v = final_values.join("; ");
+
+    // Build opacity keyTimes/values for each sprite
+    // 7 sprites: stand←(0), walk←(1), stand→(2), walk→(3), sit(4), sleep(5), petting(6)
+    let mut sprite_opacities: Vec<(Vec<String>, Vec<String>)> = vec![(vec![], vec![]); 7];
+    t = 0.0;
+    for phase in phases {
+        let sprite_idx = phase.0 as usize;
+        let t_on = t / total;
+        let t_off = (t + phase.3) / total;
+        let entry = &mut sprite_opacities[sprite_idx];
+        if entry.0.is_empty() || entry.1.last().map(|v| v.as_str()) == Some("0") {
+            entry.0.push(format!("{:.4}", (t_on - 0.001).max(0.0)));
+            entry.1.push("0".to_string());
+        }
+        entry.0.push(format!("{:.4}", t_on));
+        entry.1.push("1".to_string());
+        entry.0.push(format!("{:.4}", t_off.min(0.999)));
+        entry.1.push("1".to_string());
+        t += phase.3;
+    }
+    // Close all sprites: ensure they end at 1.0
+    for s in 0..7usize {
+        let entry = &mut sprite_opacities[s];
+        if entry.1.last().map(|v| v.as_str()) == Some("1") {
+            entry.0.push("0.9999".to_string());
+            entry.1.push("0".to_string());
+        }
+        entry.0.push("1.0000".to_string());
+        entry.1.push(if s == phases[0].0 as usize { "1" } else { "0" }.to_string());
+    }
+
+    let opacity_attr = |idx: usize| -> (String, String) {
+        let (ref kt, ref vl) = sprite_opacities[idx];
+        (kt.join("; "), vl.join("; "))
+    };
+
+    let (kt0, v0) = opacity_attr(0); // stand←
+    let (kt1, v1) = opacity_attr(1); // walk←
+    let (kt2, v2) = opacity_attr(2); // stand→
+    let (kt3, v3) = opacity_attr(3); // walk→
+    let (kt4, v4) = opacity_attr(4); // sit
+    let (kt5, v5) = opacity_attr(5); // sleep
+    let (kt6, v6) = opacity_attr(6); // petting
+
     format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="{height}" role="img" aria-label="CommitCat badge">
   <title>CommitCat - {username}</title>
-
-  <!-- Background -->
   <rect width="{width}" height="{height}" rx="14" fill="#7FD17F"/>
-
-  <!-- Text (upper right, white) -->
   <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" text-rendering="geometricPrecision" text-anchor="end">
     <text x="{text_x}" y="32" fill="#fff" font-size="16" font-weight="700">{username}</text>
     <text x="{text_x}" y="52" fill="rgba(255,255,255,0.85)" font-size="12">{info_line}</text>
   </g>
-
-  <!-- Animated cat (SMIL) -->
   <g>
-    <!-- Position: start at 70, walk left to 0, stay, walk right to 70 -->
-    <animateTransform attributeName="transform" type="translate" dur="15s" repeatCount="indefinite"
-      values="300,0; 300,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 300,0; 300,0"
-      keyTimes="0; 0.100; 0.233; 0.333; 0.400; 0.533; 0.600; 0.667; 0.733; 0.800; 0.933; 1"/>
-
-    <!-- stand← (native): 0-1.5s, 3.5-5s, 14-15s -->
+    <animateTransform attributeName="transform" type="translate" dur="{dur}s" repeatCount="indefinite" values="{translate_v}" keyTimes="{translate_kt}"/>
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{stand}" opacity="0">
-      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
-        values="1;1; 0;0; 1;1; 0;0; 1;1"
-        keyTimes="0;0.099; 0.100;0.232; 0.233;0.332; 0.333;0.932; 0.933;1"/>
+      <animate attributeName="opacity" dur="{dur}s" repeatCount="indefinite" values="{v0}" keyTimes="{kt0}"/>
     </image>
-
-    <!-- walk← (native): 1.5-3.5s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{walk}" opacity="0">
-      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
-        values="0;0; 1;1; 0;0"
-        keyTimes="0;0.099; 0.100;0.232; 0.233;1"/>
+      <animate attributeName="opacity" dur="{dur}s" repeatCount="indefinite" values="{v1}" keyTimes="{kt1}"/>
     </image>
-
-    <!-- stand→ (flipped): 11-12s -->
     <g transform="translate({flip_tx},0) scale(-1,1)">
       <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{stand}" opacity="0">
-        <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
-          values="0;0; 1;1; 0;0"
-          keyTimes="0;0.732; 0.733;0.799; 0.800;1"/>
+        <animate attributeName="opacity" dur="{dur}s" repeatCount="indefinite" values="{v2}" keyTimes="{kt2}"/>
       </image>
     </g>
-
-    <!-- walk→ (flipped): 12-14s -->
     <g transform="translate({flip_tx},0) scale(-1,1)">
       <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{walk}" opacity="0">
-        <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
-          values="0;0; 1;1; 0;0"
-          keyTimes="0;0.799; 0.800;0.932; 0.933;1"/>
+        <animate attributeName="opacity" dur="{dur}s" repeatCount="indefinite" values="{v3}" keyTimes="{kt3}"/>
       </image>
     </g>
-
-    <!-- sit: 5-6s, 8-9s, 10-11s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{sit}" opacity="0">
-      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
-        values="0;0; 1;1; 0;0; 1;1; 0;0; 1;1; 0;0"
-        keyTimes="0;0.332; 0.333;0.399; 0.400;0.532; 0.533;0.599; 0.600;0.666; 0.667;0.732; 0.733;1"/>
+      <animate attributeName="opacity" dur="{dur}s" repeatCount="indefinite" values="{v4}" keyTimes="{kt4}"/>
     </image>
-
-    <!-- sleep: 6-8s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{sleep}" opacity="0">
-      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
-        values="0;0; 1;1; 0;0"
-        keyTimes="0;0.399; 0.400;0.532; 0.533;1"/>
+      <animate attributeName="opacity" dur="{dur}s" repeatCount="indefinite" values="{v5}" keyTimes="{kt5}"/>
     </image>
-
-    <!-- petting: 9-10s -->
     <image x="8" y="{cat_y}" width="{cat_w}" height="{cat_h}" href="data:image/png;base64,{pet}" opacity="0">
-      <animate attributeName="opacity" dur="15s" repeatCount="indefinite"
-        values="0;0; 1;1; 0;0"
-        keyTimes="0;0.599; 0.600;0.666; 0.667;1"/>
+      <animate attributeName="opacity" dur="{dur}s" repeatCount="indefinite" values="{v6}" keyTimes="{kt6}"/>
     </image>
   </g>
 </svg>"##,
@@ -173,14 +237,24 @@ fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> St
         cat_y = cat_y,
         cat_w = cat_w,
         cat_h = cat_h,
+        dur = dur,
         flip_tx = flip_tx,
         username = username,
         info_line = info_line,
-        stand = stand,
-        walk = walk,
-        sit = sit,
-        sleep = sleep,
-        pet = pet,
+        translate_v = translate_v,
+        translate_kt = translate_kt,
+        stand = stand_b64,
+        walk = walk_b64,
+        sit = sit_b64,
+        sleep = sleep_b64,
+        pet = pet_b64,
+        v0 = v0, kt0 = kt0,
+        v1 = v1, kt1 = kt1,
+        v2 = v2, kt2 = kt2,
+        v3 = v3, kt3 = kt3,
+        v4 = v4, kt4 = kt4,
+        v5 = v5, kt5 = kt5,
+        v6 = v6, kt6 = kt6,
     )
 }
 
