@@ -80,9 +80,10 @@ fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> St
     let flip_tx = 2 * 8 + cat_w;
 
     // SMIL — 15s, sprite default = faces LEFT
+    // Cat roams full width: translate 0 ↔ 300
     //
-    //  0-1.5s    stand←      x=70   (native left, still)
-    //  1.5-3.5s  walk←       x=70→0 (native left, moving left, 2s)
+    //  0-1.5s    stand←      x=300  (native left, still)
+    //  1.5-3.5s  walk←       x=300→0 (native left, moving left, 2s)
     //  3.5-5s    stand←      x=0    (native left, still)
     //  5-6s      sit         x=0    (still)
     //  6-8s      sleep       x=0    (still)
@@ -90,8 +91,8 @@ fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> St
     //  9-10s     petting     x=0    (still)
     // 10-11s     sit         x=0    (still)
     // 11-12s     stand→      x=0    (flipped right, still)
-    // 12-14s     walk→       x=0→70 (flipped right, moving right, 2s)
-    // 14-15s     stand←      x=70   (native left, still — loops)
+    // 12-14s     walk→       x=0→300 (flipped right, moving right, 2s)
+    // 14-15s     stand←      x=300  (native left, still — loops)
     format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="{height}" role="img" aria-label="CommitCat badge">
   <title>CommitCat - {username}</title>
@@ -109,7 +110,7 @@ fn generate_animated_badge(contributions: u32, year: &str, username: &str) -> St
   <g>
     <!-- Position: start at 70, walk left to 0, stay, walk right to 70 -->
     <animateTransform attributeName="transform" type="translate" dur="15s" repeatCount="indefinite"
-      values="70,0; 70,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 70,0; 70,0"
+      values="300,0; 300,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 0,0; 300,0; 300,0"
       keyTimes="0; 0.100; 0.233; 0.333; 0.400; 0.533; 0.600; 0.667; 0.733; 0.800; 0.933; 1"/>
 
     <!-- stand← (native): 0-1.5s, 3.5-5s, 14-15s -->
