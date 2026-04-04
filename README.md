@@ -1,5 +1,7 @@
 # CommitCat 🐈‍⬛
 
+<a href="https://commitcat-api.fly.dev"><img src="https://commitcat-api.fly.dev/badge/eunseo9311" alt="CommitCat badge" /></a>
+
 A developer desktop companion that grows with your coding activity.
 
 ![CommitCat on desktop](assets/example.png)
