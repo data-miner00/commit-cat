@@ -27,6 +27,7 @@ async fn main() {
         .route("/badge/{username}", get(routes::badge::get_badge))
         .route("/profile/{username}", get(routes::profile::get_profile_page))
         .route("/api/v1/profile/{username}", get(routes::profile::get_profile))
+        .route("/api/v1/stats", get(routes::stats::get_stats))
         .route("/health", get(|| async { "ok" }))
         .route("/", get(landing))
         .layer(CorsLayer::permissive())
@@ -87,6 +88,10 @@ async fn landing() -> Html<&'static str> {
     <div class="ep">
       <span class="method">GET</span> <span class="path">/api/v1/profile/{username}</span>
       <div class="desc">Profile data (JSON)</div>
+    </div>
+    <div class="ep">
+      <span class="method">GET</span> <span class="path">/api/v1/stats</span>
+      <div class="desc">Global stats (users, commits, levels)</div>
     </div>
     <div class="ep">
       <span class="method">GET</span> <span class="path">/auth/github</span>

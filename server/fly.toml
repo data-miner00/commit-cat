@@ -19,6 +19,13 @@ primary_region = 'nrt'
 [env]
   DATABASE_URL = "sqlite:/data/commitcat.db?mode=rwc"
 
+[[services.http_checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10s"
+  method = "GET"
+  path = "/health"
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
