@@ -45,8 +45,16 @@ CommitCat lives on your desktop, watches your development environment locally, a
 - 🔔 macOS Notification Center — system notifications for key events
 - 🔄 Auto-update checker — notifies when a new version is available
 
+### Cloud
+- ☁️ Cloud API server — [commitcat-api.fly.dev](https://commitcat-api.fly.dev)
+- 🔄 Cross-device sync — event-based, offline-first
+- 🔐 GitHub OAuth login
+- 🏅 Animated SVG badge for GitHub README
+- 👤 [Public profile page](https://commitcat-api.fly.dev/profile/eunseo9311) — level, XP, streaks, items
+- 📊 Global stats API
+
 ### IDE Plugins
-- 📦 [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=commitcat.commitcat) — coding time, file saves, build tracking
+- 📦 [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=commitcat.commitcat) — coding time, file saves, build tracking, session stats in status bar
 - 📦 JetBrains Plugin (IntelliJ, WebStorm, PyCharm, GoLand, CLion, RustRover) — coding time, file saves, build tracking
 
 ### Settings
@@ -159,6 +167,8 @@ npm run tauri dev
 - [Tauri](https://tauri.app/) — lightweight desktop framework
 - [React](https://react.dev/) — UI
 - [Rust](https://www.rust-lang.org/) — system integration, Git & IDE tracking
+- [Axum](https://github.com/tokio-rs/axum) — cloud API server
+- [SQLite](https://www.sqlite.org/) — local & cloud data storage
 - [Anthropic API](https://docs.anthropic.com/) — AI chat (optional)
 
 ---
@@ -205,14 +215,15 @@ npm run tauri dev
 - [ ] Cat rendering inside VSCode (Webview Panel)
 - [ ] Environment detection (desktop / Codespaces / web)
 
-**v2.0 — Cloud ☁️**
-- [ ] Cloud API server (Rust + Axum)
-- [ ] Cross-device sync (event-based, offline-first)
-- [ ] GitHub OAuth
+**v2.0 — Cloud ☁️ ✅**
+- [x] Cloud API server (Rust + Axum) — deployed on [Fly.io](https://commitcat-api.fly.dev)
+- [x] Cross-device sync (event-based, offline-first)
+- [x] GitHub OAuth
 
 **v2.1 — Badge & Profile 🏅**
-- [x] GitHub README badge (`![CommitCat](api.commitcat.dev/badge/user)`)
+- [x] Animated SVG badge for GitHub README
 - [x] Public profile page
+- [x] Global stats API
 - [ ] GitHub Codespaces support
 
 **v3.0 — Multi-Platform 🌐**
@@ -224,11 +235,7 @@ npm run tauri dev
 
 ## 🤝 Contributing
 
-Contributions are welcome!
-
-- Open an issue
-- Suggest features
-- Submit pull requests
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, project structure, and PR guidelines.
 
 ---
 
