@@ -82,20 +82,26 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
     let bubble_w = text_w.max(200);
     let width = bubble_w + 155; // cat area + padding
 
-    // SMIL animation timeline (14s total, natural flow):
+    // SMIL animation — proper state machine flow (16s total):
     //
-    //   0.0-1.5s  stand idle          (at x=0,  stay still)
-    //   1.5-4.0s  walk right          (x=0 → x=30, smooth movement)
-    //   4.0-5.5s  stand idle          (at x=30, stay still)
-    //   5.5-8.0s  walk left           (x=30 → x=8, smooth movement)
-    //   8.0-8.5s  stand briefly       (at x=8,  transition to sit)
-    //   8.5-10.5s sit                 (at x=8,  stay still)
-    //  10.5-12.5s sleep               (at x=8,  stay still)
-    //  12.5-14.0s petting             (at x=8,  stay still)
+    //   stand → walk → stand → sit → sleep → sit → petting → sit → stand → walk → stand
     //
-    // keyTimes for 14s:
-    //   1.5/14=0.107  4.0/14=0.286  5.5/14=0.393  8.0/14=0.571
-    //   8.5/14=0.607  10.5/14=0.75  12.5/14=0.893
+    //   0.0-1.0s   stand           (x=0, still)
+    //   1.0-3.0s   walk right      (x=0 → x=30)
+    //   3.0-4.0s   stand           (x=30, still)
+    //   4.0-5.0s   sit             (x=30, still)
+    //   5.0-7.0s   sleep           (x=30, still)
+    //   7.0-8.0s   sit             (x=30, still)
+    //   8.0-9.0s   petting         (x=30, still)
+    //   9.0-10.0s  sit             (x=30, still)
+    //  10.0-11.0s  stand           (x=30, still)
+    //  11.0-13.0s  walk left       (x=30 → x=0)
+    //  13.0-14.0s  stand           (x=0, still — loops)
+    //
+    // keyTimes (14s):
+    //  0/14=0.000   1/14=0.071   3/14=0.214   4/14=0.286
+    //  5/14=0.357   7/14=0.500   8/14=0.571   9/14=0.643
+    // 10/14=0.714  11/14=0.786  13/14=0.929  14/14=1.000
     format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="150" role="img" aria-label="CommitCat badge">
   <title>CommitCat - {username}</title>
@@ -113,46 +119,46 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
     <text x="148" y="62" fill="#555" font-size="13">{info}</text>
   </g>
 
-  <!-- Animated cat (SMIL) -->
+  <!-- Animated cat (SMIL) — movement only during walk phases -->
   <g>
-    <!-- Movement: only moves during walk phases, stays put during sit/sleep/petting -->
     <animateTransform attributeName="transform" type="translate" dur="14s" repeatCount="indefinite"
-      values="0,0; 0,0; 30,0; 30,0; 8,0; 8,0; 8,0; 8,0; 8,0; 0,0"
-      keyTimes="0; 0.107; 0.286; 0.393; 0.571; 0.607; 0.75; 0.893; 0.99; 1"/>
+      values="0,0; 0,0; 30,0; 30,0; 30,0; 30,0; 30,0; 30,0; 30,0; 30,0; 30,0; 0,0; 0,0"
+      keyTimes="0; 0.071; 0.214; 0.286; 0.357; 0.500; 0.571; 0.643; 0.714; 0.786; 0.929; 0.930; 1"
+      calcMode="linear"/>
 
-    <!-- stand: 0-1.5s, 4-5.5s, 8-8.5s -->
-    <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{stand}" opacity="0">
+    <!-- stand: 0-1s, 3-4s, 10-11s, 13-14s -->
+    <image x="10" y="55" width="117" height="85" href="data:image/png;base64,{stand}" opacity="0">
       <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
-        values="1; 1; 0; 0; 1; 1; 0; 0; 1; 1; 0; 0; 0; 0; 1"
-        keyTimes="0; 0.106; 0.107; 0.285; 0.286; 0.392; 0.393; 0.570; 0.571; 0.606; 0.607; 0.75; 0.893; 0.99; 1"/>
+        values="1;1; 0;0; 1;1; 0;0; 0;0; 0;0; 0;0; 1;1; 0;0; 1;1"
+        keyTimes="0;0.070; 0.071;0.213; 0.214;0.285; 0.286;0.356; 0.357;0.499; 0.500;0.570; 0.571;0.713; 0.714;0.785; 0.786;0.928; 0.929;1"/>
     </image>
 
-    <!-- walk: 1.5-4s, 5.5-8s -->
-    <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{walk}" opacity="0">
+    <!-- walk: 1-3s, 11-13s -->
+    <image x="10" y="55" width="106" height="77" href="data:image/png;base64,{walk}" opacity="0">
       <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
-        values="0; 0; 1; 1; 0; 0; 1; 1; 0; 0"
-        keyTimes="0; 0.106; 0.107; 0.285; 0.286; 0.392; 0.393; 0.570; 0.571; 1"/>
+        values="0;0; 1;1; 0;0; 1;1; 0"
+        keyTimes="0;0.070; 0.071;0.213; 0.214;0.785; 0.786;0.928; 1"/>
     </image>
 
-    <!-- sit: 8.5-10.5s -->
+    <!-- sit: 4-5s, 7-8s, 9-10s -->
     <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{sit}" opacity="0">
       <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
-        values="0; 0; 1; 1; 0; 0"
-        keyTimes="0; 0.606; 0.607; 0.749; 0.75; 1"/>
+        values="0;0; 1;1; 0;0; 1;1; 0;0; 1;1; 0;0"
+        keyTimes="0;0.285; 0.286;0.356; 0.357;0.499; 0.500;0.570; 0.571;0.642; 0.643;0.713; 0.714;1"/>
     </image>
 
-    <!-- sleep: 10.5-12.5s -->
+    <!-- sleep: 5-7s -->
     <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{sleep}" opacity="0">
       <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
-        values="0; 0; 1; 1; 0; 0"
-        keyTimes="0; 0.749; 0.75; 0.892; 0.893; 1"/>
+        values="0;0; 1;1; 0;0"
+        keyTimes="0;0.356; 0.357;0.499; 0.500;1"/>
     </image>
 
-    <!-- petting: 12.5-14s -->
+    <!-- petting: 8-9s -->
     <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{pet}" opacity="0">
       <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
-        values="0; 0; 1; 1; 0; 1"
-        keyTimes="0; 0.892; 0.893; 0.99; 0.991; 1"/>
+        values="0;0; 1;1; 0;0"
+        keyTimes="0;0.570; 0.571;0.642; 0.643;1"/>
     </image>
   </g>
 </svg>"##,
