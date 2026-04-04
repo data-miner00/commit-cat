@@ -82,14 +82,20 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
     let bubble_w = text_w.max(200);
     let width = bubble_w + 155; // cat area + padding
 
-    // SMIL animation timeline (12s total):
-    //   0-2s   stand   (at x=10)
-    //   2-4s   walk    (moving to x=35)
-    //   4-5s   stand   (at x=35)
-    //   5-7s   walk    (moving back to x=10)
-    //   7-9s   sit     (at x=18)
-    //   9-10.5s sleep  (at x=18)
-    //  10.5-12s petting(at x=18)
+    // SMIL animation timeline (14s total, natural flow):
+    //
+    //   0.0-1.5s  stand idle          (at x=0,  stay still)
+    //   1.5-4.0s  walk right          (x=0 → x=30, smooth movement)
+    //   4.0-5.5s  stand idle          (at x=30, stay still)
+    //   5.5-8.0s  walk left           (x=30 → x=8, smooth movement)
+    //   8.0-8.5s  stand briefly       (at x=8,  transition to sit)
+    //   8.5-10.5s sit                 (at x=8,  stay still)
+    //  10.5-12.5s sleep               (at x=8,  stay still)
+    //  12.5-14.0s petting             (at x=8,  stay still)
+    //
+    // keyTimes for 14s:
+    //   1.5/14=0.107  4.0/14=0.286  5.5/14=0.393  8.0/14=0.571
+    //   8.5/14=0.607  10.5/14=0.75  12.5/14=0.893
     format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="150" role="img" aria-label="CommitCat badge">
   <title>CommitCat - {username}</title>
@@ -109,43 +115,44 @@ fn generate_animated_badge(level: u32, streak: u32, total_commits: u32, username
 
   <!-- Animated cat (SMIL) -->
   <g>
-    <animateTransform attributeName="transform" type="translate" dur="12s" repeatCount="indefinite"
-      values="0,0; 0,0; 25,0; 25,0; 25,0; 0,0; 10,0; 10,0; 10,0; 0,0"
-      keyTimes="0; 0.167; 0.333; 0.333; 0.417; 0.583; 0.583; 0.75; 0.875; 1"/>
+    <!-- Movement: only moves during walk phases, stays put during sit/sleep/petting -->
+    <animateTransform attributeName="transform" type="translate" dur="14s" repeatCount="indefinite"
+      values="0,0; 0,0; 30,0; 30,0; 8,0; 8,0; 8,0; 8,0; 8,0; 0,0"
+      keyTimes="0; 0.107; 0.286; 0.393; 0.571; 0.607; 0.75; 0.893; 0.99; 1"/>
 
-    <!-- stand: 0-2s, 4-5s -->
+    <!-- stand: 0-1.5s, 4-5.5s, 8-8.5s -->
     <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{stand}" opacity="0">
-      <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
-        values="1; 1; 0; 0; 1; 1; 0; 0; 0; 0; 0; 0; 1"
-        keyTimes="0; 0.166; 0.167; 0.332; 0.333; 0.416; 0.417; 0.583; 0.75; 0.875; 0.99; 0.999; 1"/>
+      <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
+        values="1; 1; 0; 0; 1; 1; 0; 0; 1; 1; 0; 0; 0; 0; 1"
+        keyTimes="0; 0.106; 0.107; 0.285; 0.286; 0.392; 0.393; 0.570; 0.571; 0.606; 0.607; 0.75; 0.893; 0.99; 1"/>
     </image>
 
-    <!-- walk: 2-4s, 5-7s -->
+    <!-- walk: 1.5-4s, 5.5-8s -->
     <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{walk}" opacity="0">
-      <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
-        values="0; 0; 1; 1; 0; 0; 1; 1; 0; 0; 0; 0"
-        keyTimes="0; 0.166; 0.167; 0.332; 0.333; 0.416; 0.417; 0.583; 0.584; 0.75; 0.875; 1"/>
+      <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
+        values="0; 0; 1; 1; 0; 0; 1; 1; 0; 0"
+        keyTimes="0; 0.106; 0.107; 0.285; 0.286; 0.392; 0.393; 0.570; 0.571; 1"/>
     </image>
 
-    <!-- sit: 7-9s -->
+    <!-- sit: 8.5-10.5s -->
     <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{sit}" opacity="0">
-      <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
         values="0; 0; 1; 1; 0; 0"
-        keyTimes="0; 0.583; 0.584; 0.749; 0.75; 1"/>
+        keyTimes="0; 0.606; 0.607; 0.749; 0.75; 1"/>
     </image>
 
-    <!-- sleep: 9-10.5s -->
+    <!-- sleep: 10.5-12.5s -->
     <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{sleep}" opacity="0">
-      <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
+      <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
         values="0; 0; 1; 1; 0; 0"
-        keyTimes="0; 0.749; 0.75; 0.874; 0.875; 1"/>
+        keyTimes="0; 0.749; 0.75; 0.892; 0.893; 1"/>
     </image>
 
-    <!-- petting: 10.5-12s -->
+    <!-- petting: 12.5-14s -->
     <image x="10" y="55" width="110" height="80" href="data:image/png;base64,{pet}" opacity="0">
-      <animate attributeName="opacity" dur="12s" repeatCount="indefinite"
-        values="0; 0; 1; 1"
-        keyTimes="0; 0.874; 0.875; 1"/>
+      <animate attributeName="opacity" dur="14s" repeatCount="indefinite"
+        values="0; 0; 1; 1; 0; 1"
+        keyTimes="0; 0.892; 0.893; 0.99; 0.991; 1"/>
     </image>
   </g>
 </svg>"##,
