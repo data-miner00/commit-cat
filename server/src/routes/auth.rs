@@ -32,7 +32,7 @@ struct AuthResponse {
 pub async fn github_login() -> Redirect {
     let client_id = std::env::var("GITHUB_CLIENT_ID").unwrap_or_default();
     let redirect_uri = std::env::var("REDIRECT_URI")
-        .unwrap_or_else(|_| "http://localhost:3000/auth/github/callback".to_string());
+        .unwrap_or_else(|_| "https://commitcat-api.fly.dev/auth/github/callback".to_string());
     Redirect::temporary(&format!(
         "https://github.com/login/oauth/authorize?client_id={}&redirect_uri={}&scope=read:user",
         client_id, redirect_uri
