@@ -72,6 +72,15 @@ pub struct AppSettings {
     /// 생일 일 (1-31)
     #[serde(default)]
     pub birthday_day: Option<u32>,
+    /// 클라우드 싱크 JWT 토큰
+    #[serde(default)]
+    pub cloud_token: Option<String>,
+    /// 클라우드 서버 URL (기본: https://api.commitcat.dev)
+    #[serde(default)]
+    pub cloud_server_url: Option<String>,
+    /// 디바이스 식별자
+    #[serde(default)]
+    pub device_id: Option<String>,
 }
 
 fn default_max_companions() -> u32 {
@@ -114,6 +123,9 @@ impl Default for AppSettings {
             sub_cats_enabled: None,
             birthday_month: None,
             birthday_day: None,
+            cloud_token: None,
+            cloud_server_url: None,
+            device_id: None,
         }
     }
 }

@@ -191,6 +191,12 @@ pub fn run() {
                 services::update::start_update_checker(update_handle).await;
             });
 
+            // 클라우드 싱크 서비스 시작 (5분 간격, opt-in)
+            let sync_handle = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                services::cloud_sync::start_sync_service(sync_handle).await;
+            });
+
             Ok(())
         })
         // ── Commands (frontend ↔ backend) ──

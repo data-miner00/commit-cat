@@ -6,3 +6,4 @@ pub mod github;
 pub mod docker;
 pub mod plugin_server;
 pub mod update;
+pub mod cloud_sync;

@@ -34,6 +34,7 @@ libgit2-sys = { version = "0.18", features = ["vendored"] }
 reqwest = { version = "0.12", features = ["json"] }
 axum = "0.8"
 toml = "0.8"
+uuid = { version = "1", features = ["v4"] }
 commit-cat-core = { path = "../crates/commit-cat-core" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
