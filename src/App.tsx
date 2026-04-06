@@ -5,7 +5,7 @@ import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { sendNotification, isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notification";
 import { Cat } from "./components/cat/Cat";
 import { useCatStore } from "./stores/catStore";
-import type { CatProfile, CatProfilesResponse } from "./types/cat";
+import type { CatColor, CatProfile, CatProfilesResponse } from "./types/cat";
 
 // 백엔드에서 오는 상태 데이터
 interface ActivityStatus {
@@ -100,6 +100,32 @@ function App() {
       clearInterval(codingTimer.current);
       codingTimer.current = null;
     }
+  };
+
+  const syncCompanionsFromSettings = async (fallbackCompanions = 0) => {
+    try {
+      const settings = await invoke<{ maxCompanions?: number }>("get_settings");
+      const companions = settings.maxCompanions ?? 2;
+      setTimeout(() => useCatStore.getState().syncSubCats(companions), 0);
+    } catch (_) {
+      setTimeout(() => useCatStore.getState().syncSubCats(fallbackCompanions), 0);
+    }
+  };
+
+  const updateActiveProfileColor = async (color: CatColor) => {
+    const response = await invoke<CatProfilesResponse>("get_cat_profiles");
+    const activeProfile = response.profiles.find(
+      (profile) => profile.id === response.activeProfileId,
+    );
+    if (!activeProfile || activeProfile.color === color) {
+      return;
+    }
+    await invoke("update_cat_profile", {
+      profile: {
+        ...activeProfile,
+        color,
+      },
+    });
   };
 
   // 앱 초기화: XP 상태 동기화
@@ -385,16 +411,19 @@ function App() {
         return;
       }
 
-      try {
-        const settings = await invoke<{ maxCompanions?: number }>("get_settings");
-        const companions = settings.maxCompanions ?? 2;
-        setTimeout(() => useCatStore.getState().syncSubCats(companions), 0);
-      } catch (_) {
-        setTimeout(() => useCatStore.getState().syncSubCats(0), 0);
-      }
+      await syncCompanionsFromSettings(0);
     });
     return () => { unlisten.then((fn) => fn()); };
   }, [applyActiveProfile]);
+
+  useEffect(() => {
+    const unlisten = listen<CatColor>("change-cat-color", (event) => {
+      updateActiveProfileColor(event.payload).catch((error) => {
+        console.error("Failed to update active cat color from tray:", error);
+      });
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
 
   // 동료 고양이 수 변경 (설정에서 0/1/2)
   useEffect(() => {

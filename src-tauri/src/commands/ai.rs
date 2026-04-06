@@ -6,7 +6,7 @@ use commit_cat_core::models::ai_provider_catalog::{
     normalize_provider_owned, resolve_model_with_catalog, resolve_reasoning_with_catalog,
     AiProviderCatalogResponse,
 };
-use commit_cat_core::models::cat_profile::CatPersonalityPreset;
+use commit_cat_core::models::cat_profile::{default_cat_profile, CatPersonalityPreset};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -93,7 +93,10 @@ pub async fn chat_with_cat(app: AppHandle, message: String) -> Result<String, St
     // Build system prompt (shared)
     let today = &data.today;
     let cat = &data.cat;
-    let active_profile = data.active_cat_profile();
+    let active_profile = data
+        .active_cat_profile()
+        .cloned()
+        .unwrap_or_else(default_cat_profile);
     let coding_hours = today.coding_minutes / 60;
     let coding_mins = today.coding_minutes % 60;
     let persona_clause = match active_profile.personality {

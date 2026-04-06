@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::cat_profile::{default_cat_profile, normalize_cat_profiles, CatProfile};
+use super::cat_profile::{default_cat_profile, normalize_cat_profiles, CatColor, CatProfile};
 
 /// 앱 설정 (권한 토글 포함)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,6 +74,9 @@ pub struct AppSettings {
     /// 생일 일 (1-31)
     #[serde(default)]
     pub birthday_day: Option<u32>,
+    /// deprecated: 프로필 도입 전 저장되었을 수 있는 레거시 고양이 색상
+    #[serde(default, rename = "catColor", skip_serializing)]
+    pub legacy_cat_color: Option<CatColor>,
     /// 클라우드 싱크 JWT 토큰
     #[serde(default)]
     pub cloud_token: Option<String>,
@@ -125,6 +128,7 @@ impl Default for AppSettings {
             sub_cats_enabled: None,
             birthday_month: None,
             birthday_day: None,
+            legacy_cat_color: None,
             cloud_token: None,
             cloud_server_url: None,
             device_id: None,
@@ -238,24 +242,39 @@ fn default_active_cat_profile_id() -> String {
 impl AppData {
     pub fn normalize(&mut self) {
         normalize_cat_profiles(&mut self.cat_profiles, &mut self.active_cat_profile_id);
+
+        if let Some(legacy_color) = self.settings.legacy_cat_color.take() {
+            let default_profile = default_cat_profile();
+            if self.cat_profiles.len() == 1 {
+                let profile = &mut self.cat_profiles[0];
+                let is_default_profile = profile.id == default_profile.id
+                    && profile.name == default_profile.name
+                    && profile.color == default_profile.color
+                    && profile.personality == default_profile.personality
+                    && self.active_cat_profile_id == profile.id;
+                if is_default_profile {
+                    profile.color = legacy_color;
+                }
+            }
+        }
     }
 
-    pub fn active_cat_profile(&self) -> &CatProfile {
+    pub fn active_cat_profile(&self) -> Option<&CatProfile> {
         self.cat_profiles
             .iter()
             .find(|profile| profile.id == self.active_cat_profile_id)
-            .unwrap_or(&self.cat_profiles[0])
+            .or_else(|| self.cat_profiles.first())
     }
 
-    pub fn active_cat_profile_mut(&mut self) -> &mut CatProfile {
+    pub fn active_cat_profile_mut(&mut self) -> Option<&mut CatProfile> {
         if let Some(index) = self
             .cat_profiles
             .iter()
             .position(|profile| profile.id == self.active_cat_profile_id)
         {
-            &mut self.cat_profiles[index]
+            self.cat_profiles.get_mut(index)
         } else {
-            &mut self.cat_profiles[0]
+            self.cat_profiles.first_mut()
         }
     }
 }

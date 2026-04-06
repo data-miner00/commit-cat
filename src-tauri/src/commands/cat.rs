@@ -1,11 +1,14 @@
 use commit_cat_core::models::cat::{CatInfo, CatMood};
 use commit_cat_core::models::growth::exp_for_level;
 use crate::services::storage;
-use commit_cat_core::models::cat_profile::{normalize_profile_name, CatProfile};
+use commit_cat_core::models::cat_profile::{
+    default_cat_profile, normalize_profile_name, CatProfile,
+};
 use commit_cat_core::models::settings::AppData;
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -46,7 +49,7 @@ fn new_profile_id() -> String {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
         .unwrap_or(0);
-    format!("cat-profile-{}", timestamp)
+    format!("cat-profile-{}-{}", timestamp, Uuid::new_v4())
 }
 
 fn next_profile_name(profiles: &[CatProfile]) -> String {
@@ -62,7 +65,10 @@ fn next_profile_name(profiles: &[CatProfile]) -> String {
 
 fn create_profile_in_data(data: &mut AppData) -> CatProfile {
     data.normalize();
-    let mut new_profile = data.active_cat_profile().clone();
+    let mut new_profile = data
+        .active_cat_profile()
+        .cloned()
+        .unwrap_or_else(default_cat_profile);
     new_profile.id = new_profile_id();
     new_profile.name = next_profile_name(&data.cat_profiles);
     data.cat_profiles.push(new_profile.clone());
@@ -254,7 +260,7 @@ mod tests {
     #[test]
     fn create_profile_keeps_existing_and_activates_new_copy() {
         let mut data = AppData::default();
-        let original = data.active_cat_profile().clone();
+        let original = data.active_cat_profile().cloned().unwrap();
 
         let created = create_profile_in_data(&mut data);
 
@@ -267,13 +273,13 @@ mod tests {
     #[test]
     fn update_profile_changes_fields() {
         let mut data = AppData::default();
-        let mut profile = data.active_cat_profile().clone();
+        let mut profile = data.active_cat_profile().cloned().unwrap();
         profile.name = "  Night Cat  ".to_string();
         profile.personality = CatPersonalityPreset::Chaotic;
 
         update_profile_in_data(&mut data, profile).unwrap();
 
-        let updated = data.active_cat_profile();
+        let updated = data.active_cat_profile().unwrap();
         assert_eq!(updated.name, "Night Cat");
         assert_eq!(updated.personality, CatPersonalityPreset::Chaotic);
     }
@@ -293,7 +299,7 @@ mod tests {
     #[test]
     fn deleting_last_profile_is_rejected() {
         let mut data = AppData::default();
-        let only_id = data.active_cat_profile().id.clone();
+        let only_id = data.active_cat_profile().unwrap().id.clone();
 
         let err = delete_profile_in_data(&mut data, &only_id).unwrap_err();
 
