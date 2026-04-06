@@ -873,7 +873,7 @@ export function Settings() {
                 type="button"
                 key={profile.id}
                 className={`settings__profile-tile ${isSelected ? "settings__profile-tile--selected" : ""}`}
-                onClick={() => setSelectedProfileId(profile.id)}
+                onClick={() => { void handleActivateProfile(profile.id); }}
               >
                 <div className={`settings__profile-preview settings__profile-preview--${profile.color}`}>
                   {isActive && <span className="settings__profile-preview-badge">Active</span>}
@@ -895,19 +895,10 @@ export function Settings() {
               <div>
                 <div className="settings__profile-editor-title">{selectedProfile.name}</div>
                 <div className="settings__profile-editor-subtitle">
-                  {activeProfileId === selectedProfile.id ? "Currently active on desktop" : "Editing an inactive profile draft"}
+                  {activeProfileId === selectedProfile.id ? "Currently active on desktop" : "Editing profile"}
                 </div>
               </div>
               <div className="settings__profile-editor-actions">
-                {activeProfileId !== selectedProfile.id && (
-                  <button
-                    type="button"
-                    className="settings__profile-activate"
-                    onClick={() => { void handleActivateProfile(selectedProfile.id); }}
-                  >
-                    Set Active
-                  </button>
-                )}
                 {profiles.length > 1 && (
                   <button
                     type="button"
