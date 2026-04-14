@@ -20,6 +20,14 @@
       {
         "command": "commitcat.showSessionStats",
         "title": "CommitCat: Show Session Stats"
+      },
+      {
+        "command": "commitcat.resetSessionStats",
+        "title": "CommitCat: Reset Session Stats"
+      },
+      {
+        "command": "commitcat.openProfile",
+        "title": "CommitCat: Open Public Profile"
       }
     ]
   },

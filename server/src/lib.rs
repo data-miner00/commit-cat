@@ -21,6 +21,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/profile/{username}", get(routes::profile::get_profile_page))
         .route("/api/v1/profile/{username}", get(routes::profile::get_profile))
         .route("/api/v1/stats", get(routes::stats::get_stats))
+        .route("/api/v1/leaderboard", get(routes::leaderboard::get_leaderboard_json))
+        .route("/leaderboard", get(routes::leaderboard::get_leaderboard_page))
         .route("/health", get(|| async { "ok" }))
         .route("/", get(landing))
         .layer(CorsLayer::permissive())
@@ -80,6 +82,10 @@ async fn landing() -> Html<&'static str> {
     <div class="ep">
       <span class="method">GET</span> <span class="path">/api/v1/stats</span>
       <div class="desc">Global stats (users, commits, levels)</div>
+    </div>
+    <div class="ep">
+      <span class="method">GET</span> <span class="path">/leaderboard</span>
+      <div class="desc">Top users ranked by level / commits / streak</div>
     </div>
     <div class="ep">
       <span class="method">GET</span> <span class="path">/auth/github</span>

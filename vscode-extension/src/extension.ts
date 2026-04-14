@@ -10,6 +10,9 @@ let statusBarItem: vscode.StatusBarItem;
 let sessionSaveCount = 0;
 let sessionCodingMinutes = 0;
 const SESSION_COMMAND_ID = "commitcat.showSessionStats";
+const RESET_COMMAND_ID = "commitcat.resetSessionStats";
+const OPEN_PROFILE_COMMAND_ID = "commitcat.openProfile";
+const PROFILE_URL_BASE = "https://commitcat-api.fly.dev/profile/";
 
 function updateStatusBar(): void {
   const parts: string[] = ["$(heart) CommitCat"];
@@ -65,8 +68,40 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand(SESSION_COMMAND_ID, () => {
       vscode.window.showInformationMessage(
-        `CommitCat session: ${sessionCodingMinutes} min coded, ${sessionSaveCount} saves`
-      );
+        `CommitCat session: ${sessionCodingMinutes} min coded, ${sessionSaveCount} saves`,
+        "Reset"
+      ).then((choice) => {
+        if (choice === "Reset") {
+          sessionSaveCount = 0;
+          sessionCodingMinutes = 0;
+          updateStatusBar();
+        }
+      });
+    })
+  );
+
+  // ── Reset session stats command ──
+  context.subscriptions.push(
+    vscode.commands.registerCommand(RESET_COMMAND_ID, () => {
+      sessionSaveCount = 0;
+      sessionCodingMinutes = 0;
+      updateStatusBar();
+      vscode.window.showInformationMessage("CommitCat: Session stats reset");
+    })
+  );
+
+  // ── Open public profile command ──
+  context.subscriptions.push(
+    vscode.commands.registerCommand(OPEN_PROFILE_COMMAND_ID, async () => {
+      const username = await vscode.window.showInputBox({
+        prompt: "Enter a GitHub username",
+        placeHolder: "eunseo9311",
+      });
+      if (username) {
+        vscode.env.openExternal(
+          vscode.Uri.parse(PROFILE_URL_BASE + encodeURIComponent(username))
+        );
+      }
     })
   );
 
