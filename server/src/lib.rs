@@ -22,6 +22,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/profile/{username}", get(routes::profile::get_profile))
         .route("/api/v1/profile/{username}/activity", get(routes::profile::get_profile_activity))
         .route("/api/v1/stats", get(routes::stats::get_stats))
+        .route("/api/v1/version", get(routes::version::get_version))
         .route("/api/v1/leaderboard", get(routes::leaderboard::get_leaderboard_json))
         .route("/leaderboard", get(routes::leaderboard::get_leaderboard_page))
         .route("/health", get(|| async { "ok" }))

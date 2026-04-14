@@ -271,6 +271,29 @@ async fn profile_page_includes_rank() {
 }
 
 #[tokio::test]
+async fn version_endpoint_returns_metadata() {
+    let app = setup_app().await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/v1/version")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(json["name"], "commit-cat-server");
+    assert!(json["version"].is_string());
+    assert!(json["commit"].is_string());
+}
+
+#[tokio::test]
 async fn profile_nonexistent_user_returns_json_with_error_field() {
     let app = setup_app().await;
 
