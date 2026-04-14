@@ -213,6 +213,64 @@ async fn leaderboard_page_returns_html() {
 }
 
 #[tokio::test]
+async fn profile_activity_returns_recent_events() {
+    let (app, pool) = setup_app_with_data().await;
+
+    // Seed a few sync events for alice
+    for (et, xp) in [("commit", 10), ("push", 5), ("commit", 10)] {
+        sqlx::query(
+            "INSERT INTO sync_events (user_id, device_id, event_type, xp, occurred_at)
+             VALUES ('u1', 'dev1', ?, ?, datetime('now'))"
+        )
+        .bind(et)
+        .bind(xp as i32)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/v1/profile/alice/activity")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(json["username"], "alice");
+    let events = json["events"].as_array().unwrap();
+    assert_eq!(events.len(), 3);
+    assert_eq!(events[0]["xp"], 10);
+}
+
+#[tokio::test]
+async fn profile_page_includes_rank() {
+    let (app, _pool) = setup_app_with_data().await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/profile/bob")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = std::str::from_utf8(&body).unwrap();
+    // bob has the highest level so rank should be #1
+    assert!(html.contains("Rank #1"), "expected 'Rank #1' in profile page");
+}
+
+#[tokio::test]
 async fn profile_nonexistent_user_returns_json_with_error_field() {
     let app = setup_app().await;
 

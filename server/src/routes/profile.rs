@@ -3,13 +3,78 @@ use axum::response::{Html, IntoResponse};
 use axum::Json;
 use crate::AppState;
 
+async fn fetch_user_rank(state: &AppState, level: i32, exp: i32) -> Option<i64> {
+    sqlx::query_scalar::<_, i64>(
+        "SELECT 1 + COUNT(*) FROM user_data
+         WHERE level > ? OR (level = ? AND exp > ?)"
+    )
+    .bind(level)
+    .bind(level)
+    .bind(exp)
+    .fetch_one(&state.db)
+    .await
+    .ok()
+}
+
+async fn fetch_recent_activity(
+    state: &AppState,
+    user_id: &str,
+    limit: i64,
+) -> Vec<(String, i32, String)> {
+    sqlx::query_as::<_, (String, i32, String)>(
+        "SELECT event_type, xp, occurred_at
+         FROM sync_events
+         WHERE user_id = ?
+         ORDER BY occurred_at DESC
+         LIMIT ?"
+    )
+    .bind(user_id)
+    .bind(limit)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default()
+}
+
+/// Activity history endpoint (last 30 sync events)
+pub async fn get_profile_activity(
+    State(state): State<AppState>,
+    Path(username): Path<String>,
+) -> Json<serde_json::Value> {
+    let user_id: Option<String> = sqlx::query_scalar(
+        "SELECT id FROM users WHERE github_username = ?"
+    )
+    .bind(&username)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    let Some(uid) = user_id else {
+        return Json(serde_json::json!({"error": "User not found", "username": username}));
+    };
+
+    let events = fetch_recent_activity(&state, &uid, 30).await;
+    let entries: Vec<serde_json::Value> = events.into_iter().map(|(event_type, xp, occurred_at)| {
+        serde_json::json!({
+            "type": event_type,
+            "xp": xp,
+            "occurredAt": occurred_at,
+        })
+    }).collect();
+
+    Json(serde_json::json!({
+        "username": username,
+        "events": entries,
+    }))
+}
+
 /// Public profile HTML page
 pub async fn get_profile_page(
     State(state): State<AppState>,
     Path(username): Path<String>,
 ) -> impl IntoResponse {
-    let row = sqlx::query_as::<_, (i32, i32, i32, i32, i32, Option<String>, String, Option<String>)>(
-        "SELECT ud.level, ud.exp, ud.total_commits, ud.current_streak, ud.longest_streak,
+    let row = sqlx::query_as::<_, (String, i32, i32, i32, i32, i32, Option<String>, String, Option<String>)>(
+        "SELECT u.id, ud.level, ud.exp, ud.total_commits, ud.current_streak, ud.longest_streak,
                 ud.current_hat, ud.unlocked_hats, u.github_avatar_url
          FROM users u
          JOIN user_data ud ON u.id = ud.user_id
@@ -20,12 +85,35 @@ pub async fn get_profile_page(
     .await;
 
     match row {
-        Ok(Some((level, exp, commits, streak, longest, hat, hats_json, avatar))) => {
+        Ok(Some((user_id, level, exp, commits, streak, longest, hat, hats_json, avatar))) => {
             let unlocked: Vec<String> = serde_json::from_str(&hats_json).unwrap_or_default();
             let avatar_url = avatar.unwrap_or_default();
             let hat_display = hat.unwrap_or_else(|| "none".to_string());
             let next_level_xp = level * 100;
             let progress_pct = if next_level_xp > 0 { (exp as f64 / next_level_xp as f64 * 100.0).min(100.0) } else { 0.0 };
+
+            let rank = fetch_user_rank(&state, level, exp).await;
+            let rank_display = match rank {
+                Some(r) => format!("#{}", r),
+                None => "-".to_string(),
+            };
+
+            let recent = fetch_recent_activity(&state, &user_id, 10).await;
+            let activity_html: String = recent.iter().map(|(event_type, xp, occurred_at)| {
+                let icon = match event_type.as_str() {
+                    "commit" => "📝",
+                    "push" => "⬆️",
+                    "pomodoro" => "🍅",
+                    "coding_time" => "💻",
+                    "pr_open" | "pr_opened" => "🔀",
+                    "pr_merge" | "pr_merged" => "✅",
+                    "build_success" => "🔨",
+                    "build_fail" => "❌",
+                    _ => "✨",
+                };
+                let date = occurred_at.split('T').next().unwrap_or(occurred_at);
+                format!(r#"<li><span class="evt-icon">{icon}</span><span class="evt-type">{event_type}</span><span class="evt-xp">+{xp} XP</span><span class="evt-date">{date}</span></li>"#)
+            }).collect();
 
             let badge_url = format!("/badge/{}", username);
 
@@ -177,6 +265,48 @@ pub async fn get_profile_page(
   .badge-section img {{
     max-width: 100%;
   }}
+  .activity {{
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }}
+  .activity h3 {{
+    font-size: 14px;
+    color: #8b949e;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }}
+  .activity ul {{ list-style: none; }}
+  .activity li {{
+    display: grid;
+    grid-template-columns: 24px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #21262d;
+  }}
+  .activity li:last-child {{ border-bottom: none; }}
+  .evt-icon {{ font-size: 16px; }}
+  .evt-type {{ color: #e6edf3; }}
+  .evt-xp {{ color: #3fb950; font-variant-numeric: tabular-nums; }}
+  .evt-date {{ color: #8b949e; font-size: 11px; font-variant-numeric: tabular-nums; }}
+  .leaderboard-link {{
+    display: inline-block;
+    margin-left: 8px;
+    background: #1a1a2e;
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }}
+  .leaderboard-link:hover {{ background: #ffd700; color: #1a1a2e; }}
   .footer {{
     text-align: center;
     color: #484f58;
@@ -196,6 +326,7 @@ pub async fn get_profile_page(
     <div>
       <div class="name">{username}</div>
       <span class="level-tag">Lv.{level}</span>
+      <a class="leaderboard-link" href="/leaderboard">Rank {rank_display}</a>
     </div>
   </div>
 
@@ -230,6 +361,8 @@ pub async fn get_profile_page(
 
   {hats_section}
 
+  {activity_section}
+
   <div class="badge-section">
     <img src="{badge_url}" alt="CommitCat Badge">
   </div>
@@ -250,6 +383,12 @@ pub async fn get_profile_page(
                 next_level_xp = next_level_xp,
                 progress_pct = progress_pct,
                 avatar_url = avatar_url,
+                rank_display = rank_display,
+                activity_section = if activity_html.is_empty() {
+                    String::new()
+                } else {
+                    format!(r#"<div class="activity"><h3>Recent Activity</h3><ul>{}</ul></div>"#, activity_html)
+                },
                 avatar_html = if avatar_url.is_empty() {
                     r#"<div class="avatar-placeholder">🐱</div>"#.to_string()
                 } else {

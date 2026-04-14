@@ -20,6 +20,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/badge/{username}", get(routes::badge::get_badge))
         .route("/profile/{username}", get(routes::profile::get_profile_page))
         .route("/api/v1/profile/{username}", get(routes::profile::get_profile))
+        .route("/api/v1/profile/{username}/activity", get(routes::profile::get_profile_activity))
         .route("/api/v1/stats", get(routes::stats::get_stats))
         .route("/api/v1/leaderboard", get(routes::leaderboard::get_leaderboard_json))
         .route("/leaderboard", get(routes::leaderboard::get_leaderboard_page))
@@ -59,12 +60,45 @@ async fn landing() -> Html<&'static str> {
   .desc { color: #8b949e; font-size: 12px; margin-left: 40px; }
   .footer { margin-top: 24px; color: #484f58; font-size: 12px; }
   .footer a { color: #58a6ff; text-decoration: none; }
+  .stats-widget {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-box {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffd700;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-cap {
+    font-size: 11px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 4px;
+  }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>🐱</h1>
   <p class="tagline">CommitCat Cloud API</p>
+
+  <div class="stats-widget" id="stats">
+    <div class="stat-box"><div class="stat-num" id="s-users">-</div><div class="stat-cap">Users</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-commits">-</div><div class="stat-cap">Commits</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-streaks">-</div><div class="stat-cap">Active streaks</div></div>
+  </div>
+
   <div class="endpoints">
     <h2>Endpoints</h2>
     <div class="ep">
@@ -104,6 +138,14 @@ async fn landing() -> Html<&'static str> {
     <a href="https://github.com/eunseo9311/commit-cat">GitHub</a> · AGPL-3.0
   </div>
 </div>
+<script>
+fetch('/api/v1/stats').then(r => r.json()).then(s => {
+  const fmt = n => n.toLocaleString();
+  document.getElementById('s-users').textContent = fmt(s.totalUsers ?? 0);
+  document.getElementById('s-commits').textContent = fmt(s.totalCommits ?? 0);
+  document.getElementById('s-streaks').textContent = fmt(s.activeStreaks ?? 0);
+}).catch(() => {});
+</script>
 </body>
 </html>"#)
 }
