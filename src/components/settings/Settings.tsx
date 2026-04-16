@@ -653,10 +653,6 @@ export function Settings() {
   }
 
   const selectedProfile = profiles.find(profile => profile.id === selectedProfileId) ?? profiles[0] ?? null;
-  const orderedProfiles = [
-    ...profiles.filter(profile => profile.id === activeProfileId),
-    ...profiles.filter(profile => profile.id !== activeProfileId),
-  ];
   const selectedProvider = aiProviderCatalog.find(provider => provider.id === aiProvider) ?? aiProviderCatalog[0] ?? null;
   const selectedModel = resolveSelectedModel(aiProvider, aiProviderModels, selectedProvider);
   const selectedModelEntry = selectedProvider?.models.find(model => model.id === selectedModel);
@@ -865,7 +861,7 @@ export function Settings() {
             </div>
             <span className="settings__profile-name">New Cat</span>
           </button>
-          {orderedProfiles.map(profile => {
+          {profiles.map(profile => {
             const isSelected = selectedProfile?.id === profile.id;
             const isActive = activeProfileId === profile.id;
             return (
