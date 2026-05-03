@@ -57,8 +57,10 @@ CommitCat lives on your desktop, watches your development environment locally, a
 - 📦 [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=commitcat.commitcat) — coding time, file saves, build tracking, session stats in status bar
 - 📦 JetBrains Plugin (IntelliJ, WebStorm, PyCharm, GoLand, CLion, RustRover) — coding time, file saves, build tracking
 
-### Settings
-- ⚙️ Settings panel — manage watched repos, cat color, timer durations, API keys, and XP progress
+### Customization
+- 🐱 Cat profiles — create multiple named cats, each with its own color and personality
+- 🎭 Personality presets — Classic, Chill, Tsundere, Chaotic (affects speech bubbles, idle behavior, and AI chat tone)
+- ⚙️ Settings panel — manage watched repos, timer durations, API keys, and XP progress
 - 🐳 Docker activity awareness — container start/build detection with XP
 
 ---
@@ -207,6 +209,12 @@ npm run tauri dev
 - [x] Item positioning & motion polish (per-state sprite alignment)
 - [x] Auto-equip items (birthday hat, commit streak crown, etc.)
 
+**v0.5.0 — Cat Profiles & Personality ✅**
+- [x] Multiple named cat profiles with per-profile color and personality
+- [x] Personality presets: Classic, Chill, Tsundere, Chaotic
+- [x] Profile strip UI in settings with stable order and active badge
+- [x] Legacy cat color auto-migrated to default profile on upgrade
+
 **v1.3 — IDE Plugins 🧩**
 - [x] JetBrains plugin marketplace preparation
 - [ ] JetBrains Extension marketplace release
@@ -248,5 +256,5 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for developmen
 
 ## 💬 Status
 
-v2.1 in progress — badge & profile live at [commitcat-api.fly.dev](https://commitcat-api.fly.dev)
+v0.5.0 released — cat profiles & personality presets. Cloud badge & profile live at [commitcat-api.fly.dev](https://commitcat-api.fly.dev)
 If you like the idea, consider giving the repo a ⭐
