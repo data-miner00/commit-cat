@@ -23,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -40,7 +40,7 @@ jobs:
             libgit2-dev
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.4.0
         with:
           node-version: 24
 
