@@ -1,6 +1,7 @@
 use commit_cat_core::models::activity::{ActivityEvent, CodingStatus, DailySummary};
 use crate::services::storage;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
+use tauri::Manager;
 
 /// 오늘 활동 요약 (이벤트에서 계산)
 #[tauri::command]

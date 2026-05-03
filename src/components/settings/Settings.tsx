@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
+import {
+  CAT_COLORS,
+  CAT_PERSONALITY_OPTIONS,
+  type CatProfile,
+  type CatProfilesResponse,
+} from "../../types/cat";
 import "./Settings.css";
 
 interface XpStatus {
@@ -10,7 +16,6 @@ interface XpStatus {
   expToNext: number;
 }
 
-type CatColor = "white" | "brown" | "orange";
 type AIProvider = "claude" | "openai-api" | "openai-codex-local";
 
 interface CodexProviderStatus {
@@ -21,7 +26,6 @@ interface CodexProviderStatus {
 }
 
 interface SettingsPayload {
-  catColor?: CatColor;
   pomodoroMinutes?: number;
   breakMinutes?: number;
   githubUsername?: string | null;
@@ -154,7 +158,10 @@ const HAT_DEFINITIONS = [
 
 export function Settings() {
   const [repos, setRepos] = useState<string[]>([]);
-  const [catColor, setCatColor] = useState<CatColor>("brown");
+  const [profiles, setProfiles] = useState<CatProfile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [profileError, setProfileError] = useState("");
   const [focusMinutes, setFocusMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);
   const [loading, setLoading] = useState(true);
@@ -167,6 +174,7 @@ export function Settings() {
   const [cloning, setCloning] = useState(false);
   const [cloneError, setCloneError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileNameSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [xp, setXp] = useState<XpStatus>({ level: 1, currentExp: 0, expToNext: 100 });
   const [githubToken, setGithubToken] = useState("");
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
@@ -249,21 +257,38 @@ export function Settings() {
     void refreshCodexStatus();
   }, [refreshCodexStatus]);
 
+  useEffect(() => {
+    return () => {
+      if (profileNameSaveTimerRef.current) {
+        clearTimeout(profileNameSaveTimerRef.current);
+      }
+    };
+  }, []);
+
   const persistSettingsPatch = useCallback(async (patch: Record<string, unknown>) => {
     await invoke("update_settings_patch", { patch });
   }, []);
 
+  const applyCatProfilesResponse = useCallback((response: CatProfilesResponse, preferredSelectedId?: string) => {
+    setProfiles(response.profiles);
+    setActiveProfileId(response.activeProfileId);
+    const nextSelectedId = preferredSelectedId
+      ?? (response.profiles.some(profile => profile.id === selectedProfileId) ? selectedProfileId : response.activeProfileId);
+    setSelectedProfileId(nextSelectedId);
+    setProfileError("");
+  }, [selectedProfileId]);
+
   useEffect(() => {
     (async () => {
       try {
-        const [repoList, settings, xpStatus, catalog] = await Promise.all([
+        const [repoList, settings, xpStatus, catalog, profileResponse] = await Promise.all([
           invoke<string[]>("get_watched_repos"),
           invoke<SettingsPayload>("get_settings"),
           invoke<XpStatus>("get_xp_status"),
           invoke<AIProviderCatalogResponse>("get_ai_provider_catalog"),
+          invoke<CatProfilesResponse>("get_cat_profiles"),
         ]);
         setRepos(repoList);
-        if (settings.catColor) setCatColor(settings.catColor);
         if (settings.pomodoroMinutes) setFocusMinutes(settings.pomodoroMinutes);
         if (settings.breakMinutes) setBreakMinutes(settings.breakMinutes);
         if (settings.githubUsername) setGithubUsername(settings.githubUsername);
@@ -285,6 +310,7 @@ export function Settings() {
         setAiProviderReasoning(normalizedReasoning);
         setAiProviderCatalog(catalog.providers);
         setXp(xpStatus);
+        applyCatProfilesResponse(profileResponse, profileResponse.activeProfileId);
 
         // Load hat info
         invoke<{ currentHat: string | null; unlockedHats: string[] }>("get_hat_info")
@@ -299,7 +325,7 @@ export function Settings() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [applyCatProfilesResponse]);
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -551,6 +577,58 @@ export function Settings() {
     }
   }, [aiProvider, aiProviderCatalog, aiProviderModels, aiProviderReasoning, persistSettingsPatch]);
 
+  const handleCreateProfile = useCallback(async () => {
+    try {
+      const response = await invoke<CatProfilesResponse>("create_cat_profile");
+      applyCatProfilesResponse(response, response.activeProfileId);
+    } catch (e) {
+      setProfileError(String(e));
+    }
+  }, [applyCatProfilesResponse]);
+
+  const handleActivateProfile = useCallback(async (profileId: string) => {
+    try {
+      await invoke("set_active_cat_profile", { profileId });
+      setActiveProfileId(profileId);
+      setSelectedProfileId(profileId);
+      setProfileError("");
+    } catch (e) {
+      setProfileError(String(e));
+    }
+  }, []);
+
+  const handleDeleteProfile = useCallback(async (profileId: string) => {
+    try {
+      const response = await invoke<CatProfilesResponse>("delete_cat_profile", { profileId });
+      applyCatProfilesResponse(response);
+    } catch (e) {
+      setProfileError(String(e));
+    }
+  }, [applyCatProfilesResponse]);
+
+  const persistProfileUpdate = useCallback(async (nextProfile: CatProfile) => {
+    try {
+      const response = await invoke<CatProfilesResponse>("update_cat_profile", { profile: nextProfile });
+      applyCatProfilesResponse(response, nextProfile.id);
+    } catch (e) {
+      const latest = await invoke<CatProfilesResponse>("get_cat_profiles").catch(() => null);
+      if (latest) {
+        applyCatProfilesResponse(latest, nextProfile.id);
+      }
+      setProfileError(String(e));
+    }
+  }, [applyCatProfilesResponse]);
+
+  const handleSelectedProfilePatch = useCallback(async (patch: Partial<CatProfile>) => {
+    const profile = profiles.find(candidate => candidate.id === selectedProfileId);
+    if (!profile) return;
+    const nextProfile = { ...profile, ...patch };
+    setProfiles(current => current.map(candidate => (
+      candidate.id === nextProfile.id ? nextProfile : candidate
+    )));
+    await persistProfileUpdate(nextProfile);
+  }, [persistProfileUpdate, profiles, selectedProfileId]);
+
   // 모자 장착/해제
   const handleHatToggle = useCallback(async (hatId: string) => {
     const newHat = currentHat === hatId ? null : hatId;
@@ -563,16 +641,6 @@ export function Settings() {
     }
   }, [currentHat]);
 
-  // 색상 변경
-  const handleColorChange = useCallback(async (color: CatColor) => {
-    setCatColor(color);
-    try {
-      await emit("change-cat-color", color);
-    } catch (e) {
-      console.error("Failed to change color:", e);
-    }
-  }, []);
-
   // 경로 축약 (홈 디렉토리 → ~)
   const shortenPath = (path: string) => {
     const home = path.match(/^\/Users\/[^/]+/)?.[0];
@@ -584,6 +652,7 @@ export function Settings() {
     return <div className="settings"><div className="settings__loading">Loading...</div></div>;
   }
 
+  const selectedProfile = profiles.find(profile => profile.id === selectedProfileId) ?? profiles[0] ?? null;
   const selectedProvider = aiProviderCatalog.find(provider => provider.id === aiProvider) ?? aiProviderCatalog[0] ?? null;
   const selectedModel = resolveSelectedModel(aiProvider, aiProviderModels, selectedProvider);
   const selectedModelEntry = selectedProvider?.models.find(model => model.id === selectedModel);
@@ -781,19 +850,130 @@ export function Settings() {
       {/* Cat Settings */}
       <section className="settings__section">
         <h2 className="settings__section-title">Cat</h2>
-        <div className="settings__color-row">
-          <span className="settings__color-label">Color</span>
-          <div className="settings__color-options">
-            {(["brown", "orange", "white"] as CatColor[]).map(color => (
+        <div className="settings__profile-strip">
+          <button
+            type="button"
+            className="settings__profile-tile settings__profile-tile--create"
+            onClick={handleCreateProfile}
+          >
+            <div className="settings__profile-preview settings__profile-preview--create">
+              <span className="settings__profile-create-plus">+</span>
+            </div>
+            <span className="settings__profile-name">New Cat</span>
+          </button>
+          {profiles.map(profile => {
+            const isSelected = selectedProfile?.id === profile.id;
+            const isActive = activeProfileId === profile.id;
+            return (
               <button
-                key={color}
-                className={`settings__color-btn settings__color-btn--${color} ${catColor === color ? "settings__color-btn--active" : ""}`}
-                onClick={() => handleColorChange(color)}
-                title={color}
-              />
-            ))}
-          </div>
+                type="button"
+                key={profile.id}
+                className={`settings__profile-tile ${isSelected ? "settings__profile-tile--selected" : ""}`}
+                onClick={() => { void handleActivateProfile(profile.id); }}
+              >
+                <div className={`settings__profile-preview settings__profile-preview--${profile.color}`}>
+                  {isActive && <span className="settings__profile-preview-badge">Active</span>}
+                  <img
+                    className="settings__profile-preview-image"
+                    src={`/assets/cat/${profile.color}_stand.png`}
+                    alt={profile.name}
+                  />
+                </div>
+                <span className="settings__profile-name">{profile.name}</span>
+              </button>
+            );
+          })}
         </div>
+        {profileError && <div className="settings__profile-error">{profileError}</div>}
+        {selectedProfile && (
+          <div className="settings__profile-editor">
+            <div className="settings__profile-editor-header">
+              <div>
+                <div className="settings__profile-editor-title">{selectedProfile.name}</div>
+                <div className="settings__profile-editor-subtitle">
+                  {activeProfileId === selectedProfile.id ? "Currently active on desktop" : "Editing profile"}
+                </div>
+              </div>
+              <div className="settings__profile-editor-actions">
+                {profiles.length > 1 && (
+                  <button
+                    type="button"
+                    className="settings__profile-delete"
+                    onClick={() => { void handleDeleteProfile(selectedProfile.id); }}
+                  >
+                    Delete Profile
+                  </button>
+                )}
+              </div>
+            </div>
+            <label className="settings__profile-field">
+              <span className="settings__color-label">Name</span>
+              <input
+                className="settings__profile-input"
+                value={selectedProfile.name}
+                onChange={(e) => {
+                  const nextName = e.target.value;
+                  setProfiles(current => current.map(profile => (
+                    profile.id === selectedProfile.id ? { ...profile, name: nextName } : profile
+                  )));
+                  if (profileNameSaveTimerRef.current) {
+                    clearTimeout(profileNameSaveTimerRef.current);
+                  }
+                  profileNameSaveTimerRef.current = setTimeout(() => {
+                    profileNameSaveTimerRef.current = null;
+                    void persistProfileUpdate({ ...selectedProfile, name: nextName });
+                  }, 350);
+                }}
+                onBlur={(e) => {
+                  if (profileNameSaveTimerRef.current) {
+                    clearTimeout(profileNameSaveTimerRef.current);
+                    profileNameSaveTimerRef.current = null;
+                  }
+                  void persistProfileUpdate({ ...selectedProfile, name: e.target.value });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  }
+                }}
+                placeholder="My Cat"
+              />
+            </label>
+            <div className="settings__color-row">
+              <span className="settings__color-label">Color</span>
+              <div className="settings__color-options">
+                {CAT_COLORS.map(color => (
+                  <button
+                    key={color}
+                    className={`settings__color-btn settings__color-btn--${color} ${selectedProfile.color === color ? "settings__color-btn--active" : ""}`}
+                    onClick={() => { void handleSelectedProfilePatch({ color }); }}
+                    title={color}
+                  />
+                ))}
+              </div>
+            </div>
+            <label className="settings__profile-field">
+              <span className="settings__color-label">Personality</span>
+              <div className="settings__provider-select-wrap">
+                <select
+                  className="settings__provider-select"
+                  value={selectedProfile.personality}
+                  onChange={(e) => { void handleSelectedProfilePatch({ personality: e.target.value as CatProfile["personality"] }); }}
+                >
+                  {CAT_PERSONALITY_OPTIONS.map(option => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="settings__provider-caret">▾</span>
+              </div>
+              <span className="settings__profile-help">
+                {CAT_PERSONALITY_OPTIONS.find(option => option.id === selectedProfile.personality)?.description}
+              </span>
+            </label>
+          </div>
+        )}
         <div className="settings__toggle-row">
           <span className="settings__toggle-label">Companions</span>
           <div className="settings__stepper">

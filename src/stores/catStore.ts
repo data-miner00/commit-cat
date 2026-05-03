@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { CatColor, CatPersonality, CatProfile } from "../types/cat";
 
 type CatState =
   | "idle"
@@ -10,7 +11,6 @@ type CatState =
   | "interaction";
 
 type CatMood = "happy" | "sad" | "sleeping" | "focused" | "excited";
-export type CatColor = "white" | "brown" | "orange";
 export type CatEmotion = null | "surprised" | "excited" | "proud" | "bored" | "angry";
 
 export interface SubCat {
@@ -35,6 +35,7 @@ interface CatStore {
   expToNext: number;
   streakDays: number;
   catColor: CatColor;
+  catPersonality: CatPersonality;
 
   // Activity
   activeIde: string | null;
@@ -72,6 +73,7 @@ interface CatStore {
   setState: (state: string) => void;
   setLevel: (level: number, exp: number, expToNext: number) => void;
   setCatColor: (color: CatColor) => void;
+  applyActiveProfile: (profile: CatProfile) => void;
   syncSubCats: (maxCompanions?: number) => void;
   setActiveIde: (ide: string | null) => void;
   setIdleSeconds: (seconds: number) => void;
@@ -120,6 +122,7 @@ export const useCatStore = create<CatStore>((set) => ({
   expToNext: 100,
   streakDays: 0,
   catColor: "brown",
+  catPersonality: "classic",
 
   currentHat: null,
   unlockedHats: [],
@@ -158,6 +161,12 @@ export const useCatStore = create<CatStore>((set) => ({
 
   setCatColor: (color) =>
     set({ catColor: color }),
+
+  applyActiveProfile: (profile) =>
+    set({
+      catColor: profile.color,
+      catPersonality: profile.personality,
+    }),
 
   syncSubCats: (maxCompanions?: number) =>
     set((s) => {

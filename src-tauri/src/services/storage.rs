@@ -34,7 +34,8 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
 /// 데이터 로드 (파싱 실패 시 백업에서 복구)
 pub fn load(app: &AppHandle) -> Result<AppData, String> {
-    let data = load_from_dir(&data_dir(app)?)?;
+    let mut data = load_from_dir(&data_dir(app)?)?;
+    data.normalize();
     Ok(data)
 }
 
@@ -78,15 +79,19 @@ fn load_from_dir(dir: &Path) -> Result<AppData, String> {
     let content =
         std::fs::read_to_string(&path).map_err(|e| format!("Failed to read data: {}", e))?;
 
-    match serde_json::from_str(&content) {
-        Ok(data) => Ok(data),
+    match serde_json::from_str::<AppData>(&content) {
+        Ok(mut data) => {
+            data.normalize();
+            Ok(data)
+        }
         Err(e) => {
             let backup_path = dir.join(BACKUP_FILE);
             if backup_path.exists() {
                 let backup_content = std::fs::read_to_string(&backup_path)
                     .map_err(|e| format!("Failed to read backup: {}", e))?;
-                let data: AppData = serde_json::from_str(&backup_content)
+                let mut data: AppData = serde_json::from_str(&backup_content)
                     .map_err(|_| format!("Both data and backup corrupted: {}", e))?;
+                data.normalize();
                 let _ = std::fs::copy(&backup_path, &path);
                 Ok(data)
             } else {
@@ -101,8 +106,10 @@ fn save_to_dir(dir: &Path, data: &AppData) -> Result<(), String> {
     let backup_path = dir.join(BACKUP_FILE);
     let tmp_path = dir.join("commit-cat-data.tmp.json");
 
-    let json =
-        serde_json::to_string_pretty(data).map_err(|e| format!("Failed to serialize: {}", e))?;
+    let mut normalized = data.clone();
+    normalized.normalize();
+    let json = serde_json::to_string_pretty(&normalized)
+        .map_err(|e| format!("Failed to serialize: {}", e))?;
 
     // 1. 현재 파일을 백업
     if path.exists() {
