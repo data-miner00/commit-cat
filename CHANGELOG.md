@@ -2,6 +2,20 @@
 
 All notable changes to CommitCat are documented here.
 
+## v0.5.0 — 2026-05-03
+
+### Cat Profiles & Personality System
+- Persistent cat profiles with create, rename, and delete support
+- Active profile selection — switch between multiple cats on the fly
+- Personality presets: Classic, Chill, Tsundere, Chaotic
+  - Affects speech bubbles, idle behavior weights, coding chatter cadence, and AI chat tone
+- Profile strip UI in settings: stable creation-order layout with active badge indicator
+- Profile name debounced auto-save (350ms) with onBlur flush
+- Legacy `catColor` migrated to the default profile on first upgrade
+- Cross-window profile sync via `cat-profile:changed` event
+
+---
+
 ## v0.4.0 — 2026-04-14
 
 ### Cloud / Server (v2.0–v2.1)
